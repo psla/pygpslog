@@ -1,0 +1,16 @@
+Limit Landmark Categories
+Search icon file properly
+Speed begin-end
+Convert icons to bmps
+
+gpslib: simulation provider (GPX, OZI)
+
+Done:
+  Alt. correction
+  Larger spd/hdg display
+  show recorded time
+  switch backlight off on focus lost
+  Check GPS-Type availability
+  Travel Modes (Walk, City, Highway, ...)
+  Waypoint marker
+  Skip erratic altitudes
