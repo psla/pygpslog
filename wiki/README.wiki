@@ -1,4 +1,5 @@
 #summary pygpslog Documentation.
+#labels Featured
 
 = ABOUT =
 [http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger that uses Nokia's internal location and landmarks API and thus can co-operate with other navigation applications running at the same time.
