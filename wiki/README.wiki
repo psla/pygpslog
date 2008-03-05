@@ -20,14 +20,14 @@ running at the same time.
   * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
   * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
 
-  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself with a developer certificate in order to be really useful. Please see the [README#DOCUMENTATION DOCUMENTATION]
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#DOCUMENTATION DOCUMENTATION]
 
 Unfortunately, the Landmarks module, as of Mar. 3, 2008, contains a
 few bugs that prevent it from working with pygpslog. Until I receive word
 from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis patched version]
 from this site.
 
-In fact, the !LocationRequestor and Landarks modules are not_absolutely_
+In fact, the !LocationRequestor and Landarks modules are not _absolutely_
 required to run pygpslog, but the functionality will be severely limited.
 Please see [README#OPERATION below].
 
@@ -36,13 +36,16 @@ Please see [README#OPERATION below].
  # Get the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
  # Get the [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis Landmarks] module.
  # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
- # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed] and get a DevCert.
+ # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed].
  # Sign !LocationRequestor, Landmarks and PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, Location` and `SwEvent`.
  # Install to your device
  # Done!
   
 I know the signing process is tedious, but this application requires `Location`
-capabilities (`SwEvent` might be needed later).
+capabilities (`SwEvent` might be needed later). To make things worse,
+Symbian Signed seems to be in the process of changing their signing procedures.
+As of now (Mar. 3, 2008) you're not able to get your own developer certificate.
+But please check yourself at [https://www.symbiansigned.com Symbian Signed].
 
 If you _absolutely_ want to avoid Symbian Signed _and_ you have and _external
 Bluetooth_ GPS device, you may skip the installation of !LocationRequestor and
@@ -55,11 +58,32 @@ pygpslog can operate in three different modes. Each mode has it's advantages
 and disadvantages. The default mode depends on what you installed during
 the [#INSTALLATION installation process].
 
+=== Location Requestor === 
+(Preferred method, uses 3rd Party Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications
+ * Very extensive data available.
+ * Works with external or internal GPS devices
+==== Con's: ====
+ * Requires the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+ * Must be Symbian signed
+
 === Generic NMEA over Bluetooth ===
 ==== Pro's: ====
  * Most extensive (and probably precise) data available.
- * Low CPU usage and battery drainage.
  * Can be used without Symbian Signed.
  * No additional modules required
 ==== Con's ===
+ * Requires an external Bluetooth GPS.
  * GPS cannot be shared with Nokia Maps, Navigator, mgMaps or others.
+ 
+=== Nokia Positioning === 
+(uses standard Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications
+ * Works with external or internal GPS devices
+ * No additional modules required
+==== Con's: ====
+ * Severely limited data (no satellite info, ...)
+ * Must be Symbian signed
+  
