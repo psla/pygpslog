@@ -1,0 +1,29 @@
+#summary pygpslog Documentation.
+
+= ABOUT =
+[http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger that uses Nokia's internal location and landmarks API and thus can co-operate with other navigation applications running at the same time.
+
+= LICENSE =
+  see [LICENSES] and [COPYING]
+
+= REQUIREMENTS =
+  * A device running S60 3rd edition.
+  * An internal or external GPS device.
+  * Python for S60, v1.4.2 or higher
+  You may get it from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
+  If you're new to Python on S60 it's probably better to read the
+  [http://wiki.opensource.nokia.com/projects/PyS60 PyS60 Wiki] first.
+  * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+  * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
+
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself with a developer certificate in order to be really useful. Please see the [README]
+
+Unfortunately, the Landmarks module, as of Mar. 3, 2008, contains a few bugs that prevent
+it from working with pygpslog. Until I receive word from the authors, you may download
+a [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis patched version] from this site.
+
+In fact, the !LocationRequestor and Landarks modules are not _absolutely_ required to
+run pygpslog, but the functionality will be severly limited. Please see below.
+
+= DOCUMENTATION =
+  [README is in the README...]
