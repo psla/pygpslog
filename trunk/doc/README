@@ -1,0 +1,114 @@
+#summary pygpslog Documentation.
+
+= ABOUT =
+[http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger for S60 
+smartphones that uses Nokia's internal location and landmarks API and
+thus can co-exist with other navigation applications (e.g. Nokia Maps)
+running at the same time.
+
+It's features include
+  * Record data in standard [http://www.topografix.com/GPX GPX] or [http://www.oziexplorer.com/ OziExplorer] format.
+  * Easy marking of waypoints (with or without confirmation).
+  * Easy marking of six different track segment types (e.g. speed limits).
+  * The usual: Data view, Satellite View, Compass View...
+  * Integration with Nokia's landmarks.
+
+But best see the [README#SCREENSHOTS Screenshots] below.
+
+= LICENSE =
+  see [LICENSES] and [COPYING]
+
+= REQUIREMENTS =
+  * A device running S60 3rd edition.
+  * An internal or external GPS device.
+  * Python for S60, v1.4.2 or higher
+  You may get it from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
+  If you're new to Python on S60 it's probably better to read the
+  [http://wiki.opensource.nokia.com/projects/PyS60 PyS60 Wiki] first.
+  * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module (*see below!*).
+  * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
+
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
+
+The !LocationRequestor module above is packaged with an UID that cannot be
+used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
+process. Therefore I'm making a 
+[http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis re-packaged version]
+available here.
+
+Unfortunately, the Landmarks module, as of Mar. 7, 2008, contains a
+few bugs that prevent it from working with pygpslog. Until I receive word
+from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis patched version]
+from this site.
+
+In fact, the !LocationRequestor and Landarks modules are not _absolutely_
+required to run pygpslog, but the functionality will be severely limited.
+Please see [README#OPERATION below].
+
+= CONTACT =
+Please leave your comments on the [Contact] wiki page. I will be notified by
+e-mail automagically ;-)
+
+= INSTALLATION =
+ # Install Python for S60 from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
+ # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
+ # Get the [http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis LocationRequestor] module.
+ # Get the [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis Landmarks] module.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
+ # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
+ # Sign !LocationRequestor, Landmarks and !PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
+ # Install to your device
+ # Done!
+ 
+I know the signing process is tedious, but this application requires `Location`
+capabilities (`SwEvent` might be needed later). To make things worse,
+Symbian Signed seems to be in the process of changing their signing procedures.
+As of now (Mar. 7, 2008) you're not able to get your own developer certificate
+without a valid Publisher ID. But please check yourself at
+[https://www.symbiansigned.com Symbian Signed].
+
+In the meantime I'll try to keep some SymbianSigned instructions [SymbianSigned updated].
+Please feel free to comment and contribute.
+
+If you _absolutely_ want to avoid Symbian Signed _and_ you have and _external
+Bluetooth_ GPS device, you may skip the installation of !LocationRequestor and
+Landmarks. In this case _you will not be able_ to share the GPS device
+with other applications, and, you cannot use your phone's landmarks in any
+way.
+
+= OPERATION =
+pygpslog can operate in three different modes. Each mode has it's advantages
+and disadvantages. The default mode depends on what you installed during
+the [#INSTALLATION installation process].
+
+=== Location Requestor === 
+(Preferred method, uses 3rd Party Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications
+ * Very extensive data available.
+ * Works with external or internal GPS devices
+==== Con's: ====
+ * Requires the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+ * Must be Symbian signed
+
+=== Generic NMEA over Bluetooth ===
+==== Pro's: ====
+ * Most extensive (and probably precise) data available.
+ * Can be used without Symbian Signed.
+ * No additional modules required
+==== Con's ===
+ * Requires an external Bluetooth GPS.
+ * GPS cannot be shared with Nokia Maps, Navigator, mgMaps or others.
+ 
+=== Nokia Positioning === 
+(uses standard Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications
+ * Works with external or internal GPS devices
+ * No additional modules required
+==== Con's: ====
+ * Severely limited data (no satellite info, ...)
+ * Must be Symbian signed
+  
+= SCREENSHOTS =
+In the making...
