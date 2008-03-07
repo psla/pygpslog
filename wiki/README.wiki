@@ -147,6 +147,9 @@ Information display is only active if logging is switched on.
 The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
 between the different modes.
  # Overview - Logfile name General GPS
+ # Satellite View
+ # Compass and Speed
+ # Landmarks
  
 === Waypoints ===
 The `'0'` key inserts a waypoint into the log file. Currently, this is done
