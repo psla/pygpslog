@@ -15,8 +15,10 @@
   # [#Display_Modes Display Modes]
   # [#Waypoints Waypoints]
   # [#Track_Segments Track Segments]
- # [#SETTINGS]
- # [#SCREENSHOTS]
+ # [#SETTINGS SETTINGS]
+  # [#General General]
+  # [#Landmarks Landmarks]
+ # [#SCREENSHOTS SCREENSHOTS]
  
 = ABOUT =
 [http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger for S60 
