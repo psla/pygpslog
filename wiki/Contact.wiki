@@ -1,0 +1,11 @@
+#summary Please leave your comments here, I'll get back to you later.
+
+= CONTACT =
+
+Please leave your comments here, I'll get back to you later.
+
+= ISSUES =
+
+If there are any problems with the program, you may also use the
+[http://code.google.com/p/pygpslog/issues/list Issue Tracker] on
+this site.
