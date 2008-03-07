@@ -91,7 +91,6 @@ With full info on
       <trkpt lat="47.839628333" lon="12.110273333">
         <ele>444.399994</ele>
         <time>2008-03-05T21:04:47Z</time>
-        <name>Speed 70 - 1</name>
         <sat>6</sat>
         <hdop>2.0</hdop>
         <vdop>2.3</vdop>
@@ -112,7 +111,6 @@ With full info on
           <gpslog:sat az="19.0" ele="2.0" prn="19" signal="-1" used="false" />
           <gpslog:sat az="294.0" ele="1.0" prn="21" signal="23" used="false" />
           <gpslog:sat az="215.0" ele="28.0" prn="33" signal="35" used="false" />
-          <gpslog:mark in="true">Speed 70</gpslog:mark>
         </extensions>
       </trkpt>
     </trkseg>
