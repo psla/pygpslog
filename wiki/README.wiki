@@ -7,6 +7,14 @@ smartphones that uses Nokia's internal location and landmarks API and
 thus can co-exist with other navigation applications (e.g. Nokia Maps)
 running at the same time.
 
+It's features include
+  * Record data in standard [http://www.topografix.com/GPX GPX] or [http://www.oziexplorer.com/ OziExplorer] format.
+  * Easy marking of waypoints (with or without confirmation).
+  * Easy marking of six different track segment types (e.g. speed limits).
+  * The usual: Data view, Satellite View, Compass View
+  * Integration with Nokia's landmarks.
+  * Better see the [README#SCREENSHOTS Screenshots]
+
 = LICENSE =
   see [LICENSES] and [COPYING]
 
@@ -17,10 +25,16 @@ running at the same time.
   You may get it from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
   If you're new to Python on S60 it's probably better to read the
   [http://wiki.opensource.nokia.com/projects/PyS60 PyS60 Wiki] first.
-  * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+  * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module (*see below*).
   * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
 
-  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#DOCUMENTATION DOCUMENTATION]
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
+
+The LocationRequestor module above is packaged with an UID that cannot be
+used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
+process. Therefore I'm also making a 
+[http://pygpslog.googlecode.com/files/LocationReq-3rd-unsigned.sis re-packaged version]
+available here.
 
 Unfortunately, the Landmarks module, as of Mar. 3, 2008, contains a
 few bugs that prevent it from working with pygpslog. Until I receive word
@@ -33,19 +47,23 @@ Please see [README#OPERATION below].
 
 = INSTALLATION =
  # Install Python for S60 from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
- # Get the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+ # Get the [http://pygpslog.googlecode.com/files/LocationReq-3rd-unsigned.sis LocationRequestor] module.
  # Get the [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis Landmarks] module.
  # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
  # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed].
- # Sign !LocationRequestor, Landmarks and PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, Location` and `SwEvent`.
+ # Sign !LocationRequestor, Landmarks and PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, Location` and `SwEvent`. See SymbianSigned.
  # Install to your device
  # Done!
   
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
 Symbian Signed seems to be in the process of changing their signing procedures.
-As of now (Mar. 3, 2008) you're not able to get your own developer certificate.
-But please check yourself at [https://www.symbiansigned.com Symbian Signed].
+As of now (Mar. 7, 2008) you're not able to get your own developer certificate
+without a valid Publisher ID. But please check yourself at
+[https://www.symbiansigned.com Symbian Signed].
+
+In the meantime I'll try to keep some SymbianSigned instructions [SymbianSigned updated].
+Please feel free to comment and contribute.
 
 If you _absolutely_ want to avoid Symbian Signed _and_ you have and _external
 Bluetooth_ GPS device, you may skip the installation of !LocationRequestor and
@@ -87,3 +105,4 @@ the [#INSTALLATION installation process].
  * Severely limited data (no satellite info, ...)
  * Must be Symbian signed
   
+= SCREENSHOTS =
