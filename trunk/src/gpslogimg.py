@@ -1,12 +1,18 @@
 import sys, os, e32
 from graphics import Image
 
-try: raise Exception
-except     Exception:  thisdir = os.path.dirname(sys.exc_info()[2].tb_frame.f_code.co_filename)
+ALLICONS = "gpsloglm.jpg"
+
+def findImages(): # really: Install icons ;-)
+  for d in [".", os.path.dirname(__file__), r"E:\Python", r"C:\Python"]:
+    global thisdir
+    thisdir = os.path.normcase(os.path.abspath(d))
+    if os.path.exists(os.path.join(thisdir, ALLICONS)): break
+findImages()
 
 ICONSIZE      = (64,64)
 ICONS_PER_ROW = 2
-ALLICONS      = Image.open(os.path.join(thisdir, "gpsloglm.jpg"))
+ALLICONS      = Image.open(os.path.join(thisdir, ALLICONS))
 DEFALPHA      = [ 0x7f7f7f, 0x1f1f1f ]
 ICONS         = [ "Default",  "Speed 30", "Speed 50", "Speed 60", "Speed 70",
                   "Speed 80", "Speed 100" ]
