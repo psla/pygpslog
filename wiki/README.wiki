@@ -31,15 +31,15 @@ But best see the [README#SCREENSHOTS Screenshots] below.
 
   * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
 
-The LocationRequestor module above is packaged with an UID that cannot be
+The !LocationRequestor module above is packaged with an UID that cannot be
 used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
 process. Therefore I'm also making a 
-[http://pygpslog.googlecode.com/files/LocationReq-3rd-unsigned.sis re-packaged version]
+[http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis re-packaged version]
 available here.
 
 Unfortunately, the Landmarks module, as of Mar. 3, 2008, contains a
 few bugs that prevent it from working with pygpslog. Until I receive word
-from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis patched version]
+from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis patched version]
 from this site.
 
 In fact, the !LocationRequestor and Landarks modules are not _absolutely_
@@ -52,14 +52,15 @@ e-mail automagically ;-)
 
 = INSTALLATION =
  # Install Python for S60 from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
- # Get the [http://pygpslog.googlecode.com/files/LocationReq-3rd-unsigned.sis LocationRequestor] module.
- # Get the [http://pygpslog.googlecode.com/files/Landmarks-3rd-unsigned.sis Landmarks] module.
+ # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
+ # Get the [http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis LocationRequestor] module.
+ # Get the [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis Landmarks] module.
  # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
- # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed].
- # Sign !LocationRequestor, Landmarks and PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, Location` and `SwEvent`. See SymbianSigned.
+ # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
+ # Sign !LocationRequestor, Landmarks and PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
  # Install to your device
  # Done!
-  
+ 
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
 Symbian Signed seems to be in the process of changing their signing procedures.
