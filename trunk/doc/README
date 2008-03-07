@@ -1,5 +1,25 @@
 #summary pygpslog Documentation.
-
+#labels Featured
+== CONTENTS ==
+ # [#ABOUT ABOUT]
+ # [#LICENSE LICENSE]
+ # [#REQUIREMENTS REQUIREMENTS]
+ # [#CONTACT CONTACT]
+ # [#INSTALLATION INSTALLATION]
+ # [#OPERATION OPERATION]
+  # [#Location_Requestor Location Requestor]
+  # [#Generic_NMEA_over_Bluetooth Generic NMEA over Bluetooth]
+  # [#Nokia_Positioning Nokia Positioning]
+ # [#USAGE USAGE]
+  # [#Logging Logging]
+  # [#Display_Modes Display Modes]
+  # [#Waypoints Waypoints]
+  # [#Track_Segments Track Segments]
+ # [#SETTINGS SETTINGS]
+  # [#General General]
+  # [#Landmarks Landmarks]
+ # [#SCREENSHOTS SCREENSHOTS]
+ 
 = ABOUT =
 [http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger for S60 
 smartphones that uses Nokia's internal location and landmarks API and
@@ -41,7 +61,7 @@ few bugs that prevent it from working with pygpslog. Until I receive word
 from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis patched version]
 from this site.
 
-In fact, the !LocationRequestor and Landarks modules are not _absolutely_
+In fact, the !LocationRequestor and Landmarks modules are not _absolutely_
 required to run pygpslog, but the functionality will be severely limited.
 Please see [README#OPERATION below].
 
@@ -110,5 +130,57 @@ the [#INSTALLATION installation process].
  * Severely limited data (no satellite info, ...)
  * Must be Symbian signed
   
+= USAGE =
+
+=== Logging ===
+They `'Yes'` (Green) key starts and stops the GPS logger. Every restart
+creates a new log file in the [#SETTINGS configured] data directory (default:
+`C:\Data\GpsLog`).
+
+The `'C'` (Backspace) key pauses the logging operation.
+
+Logging can be started automatically on program startup (see [#SETTINGS SETTINGS]).
+
+=== Display Modes ===
+Information display is only active if logging is switched on.
+
+The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
+between the different modes.
+ # Overview - Log File Name and General GPS
+ # Satellite View
+ # Compass and Speed
+ # Landmarks
+ 
+=== Waypoints ===
+The `'0'` key inserts a waypoint into the log file. Currently, this is done
+by inserting a named trackpoint into the GPX file. For !OziExplorer files,
+this doesn't have any effect in this version.
+
+If the Landmarks module is [#INSTALLATION installed], and the option is
+[#Landmark_Settings activated], a Nokia landmark is added.
+
+=== Track Segments ===
+There are six different segment types. Their default names are:
+`"Speed 30", "Speed 50", "Speed 60", "Speed 70", "Speed 80"` and `"Speed 100"`.
+(This will be configurable in the future).
+
+The segments are activated by pressing one of the number keys from `'4'` to `'9'`.
+To end a segment press the same key agein or press the '`*'`-key.
+
+If you press a different key from `'4'` to `'9'` while a segment is active,
+the current segment will be closed and a new segment opened.
+
+If the Landmarks module is [#INSTALLATION installed], and the option is
+[#Landmark_Settings activated], a Nokia landmark is added, that marks the
+center between the start and the end of the segment and has a coverage
+radius of half the distance.
+
+
+= SETTINGS =
+
 = SCREENSHOTS =
-In the making...
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
+and
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite.jpg
+
+Some more [Screenshots here].
