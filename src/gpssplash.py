@@ -52,3 +52,6 @@ def hide():
     __splash = None
     
   e32.ao_yield()
+
+def savedBody():
+  return __appbody

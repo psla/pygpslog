@@ -26,7 +26,11 @@ if landmarks != None:
 
   findIcons()
   
-  ICON_DEF = [ ("Default", 0x4000), ("GPS Log", 0x4000), ("Speed 30", 0x4002), ("Speed 50", 0x4004) ]
+  ICON_DEF = [ 
+    ("Default", 0x4000),  ("GPS Log", 0x4000),  ("Speed",     0x400A),
+    ("Speed 30", 0x4002), ("Speed 50", 0x4004), ("Speed 60",  0x4006),
+    ("Speed 70", 0x4008), ("Speed 80", 0x400A), ("Speed 100", 0x400C),
+  ]
   ICONS    = dict([ (n, id) for n, id in ICON_DEF ])
 
   def OpenDb(uri=LANDMARK_DB, create=False):
@@ -47,7 +51,71 @@ if landmarks != None:
     id  = cm.AddCategory(c)
     c.Close(); cm.Close(); db.Close()
       
-  def CreateLm(wpt, name=None, desc=None, cat=[], edit=False):
+  def SearchLm(crit, max=-1, asWpt=False, db=None):
+    if db != None: sdb = db
+    else:          sdb = OpenDb()
+    if type(crit) not in (tuple, list): critList = [ crit ]
+    else:                               critList = crit
+    try:
+      srch = sdb.CreateSearch()
+      # we're only doing this because CompositeCriteria crashes the app:
+      # So let's chain the searches
+      prevOnly = False
+      for crit in critList:
+        op   = srch.StartLandmarkSearch(crit, landmarks.ENoAttribute, 0, prevOnly)
+        if max >= 0:
+          srch.SetMaxNumOfMatches(max)
+        op.Execute(); op.Close()
+        res = []
+        if srch.NumOfMatches() > 0: # ??? see landmarks doc
+          it = srch.MatchIterator()
+          id = it.Next()
+          while id != landmarks.KPosLmNullItemId:
+            if asWpt:
+              lm = sdb.ReadLandmark(id)
+              pos = lm.GetPosition()
+              rad = lm.GetCoverageRadius()
+              attr = { "categories": lm.GetCategories() }
+              if rad != None: attr["radius"] = rad
+              res += [ (gpslogutil.Waypoint([ lm.GetLandmarkName(), pos[0], pos[1], pos[2],
+                                              None, None, None, None, None, None, None,
+                                              pos[3], pos[4], attr ] ), lm.GetIcon()) ]
+              lm.Close()
+            else:
+              res += [id]
+            id = it.Next()
+          it.Close()
+        else:
+          break
+        prevOnly = True
+      srch.Close()
+    finally:
+      if db == None:
+        sdb.Close()
+    return res
+
+  def SetCatIcons(name):
+    db   = OpenDb()
+    cm   = db.CreateCategoryManager()
+    cid  = cm.GetCategory(unicode(name))
+    if cid != landmarks.KPosLmNullItemId:
+      cat = cm.ReadCategory(cid)
+      icon = cat.GetIcon()
+      cat.Close()
+      if icon != None:
+        # sc   = landmarks.CreateCategoryCriteria(0, 0, unicode(name))
+        sc   = landmarks.CreateCategoryCriteria(cid, 0, "")
+        ids  = SearchLm(sc, db=db)
+        sc.Close()
+        for id in ids:
+          lm = db.ReadLandmark(id)
+          lm.SetIcon(*icon)
+          db.UpdateLandmark(lm)
+          lm.Close()
+    cm.Close()
+    db.Close()
+    
+  def CreateLm(wpt, name=None, desc=None, cat=[], radius=None, edit=False):
     if not type(cat) in [list, tuple]:
       cat = [ cat ]
     lm = landmarks.CreateLandmark()
@@ -56,7 +124,8 @@ if landmarks != None:
     lm.SetLandmarkName(unicode(name))
     if desc != None:
       lm.SetLandmarkDescription(unicode(desc))
-
+    if radius != None:
+      lm.SetCoverageRadius(radius)
     for c in cat:
       lm.AddCategory(c)
 
@@ -80,34 +149,19 @@ if landmarks != None:
 
     db.Close()
   
-  def NearestLm(lat, lon, max=16, maxdist=-1.0):
-    sc   = landmarks.CreateNearestCriteria(lat, lon, 0.0, False, maxdist)
-    db   = OpenDb()
-    srch = db.CreateSearch()
-    srch.SetMaxNumOfMatches(max)
-    op   = srch.StartLandmarkSearch(sc, landmarks.ENoAttribute, 0, 0)
-    res  = []
-    op.Execute()
-    op.Close()
+  def NearestLm(lat, lon, max=16, maxdist=-1.0, cat=-1):
+    if lat == None or lon == None:
+      return []
 
-    if srch.NumOfMatches() > 0: # ??? see landmarks doc
-      it = srch.MatchIterator()
-      id = it.Next()
-      while id != landmarks.KPosLmNullItemId:
-        lm  = db.ReadLandmark(id)
-        pos = lm.GetPosition()
-        res += [ (gpslogutil.Waypoint([ lm.GetLandmarkName(), pos[0], pos[1], pos[2],
-                                        None, None, None, None, None, None, None,
-                                        pos[3], pos[4] ] ), lm.GetIcon()) ]
-        lm.Close()
-        id = it.Next()
-        if max > 0 and len(res) >= max:
-          break
-      it.Close()
-
-    srch.Close()
-    sc.Close()
-    db.Close()
+    sc = [ landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist)) ]
+    if cat != -1:
+      # catc   = landmarks.CreateCategoryCriteria(cat, 0, "")
+      # sc     = landmarks.CreateCompositeCriteria(landmarks.ECompositionAND,
+      #           [ catc, near ])
+      # catc.Close(); near.Close()
+      sc += [ landmarks.CreateCategoryCriteria(cat, 0, "") ]
+    res  = SearchLm(sc, max=max, asWpt=True)
+    for s in sc: s.Close()
     return res
 
   class LandmarkSettings(gpslogutil.GpsLogSettings):
@@ -124,15 +178,19 @@ if landmarks != None:
         (("uselm",   "Use Landmarks", True), "number",   [], 1),
         (("wptlm",   "Store Waypoints as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("wptcat",  "Category for Waypoints"), "combo",  wptnames , u"(None)"),
+        (("warncat", "Notify near Category"), "combo",  wptnames , u"(None)"),
+        (("warnrad", "Distance for Notfication"), "number",  [] , 100),
+        (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
         (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"on"),
         (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
       ]
-      self.ONOFFS   = [ "wptlm", "lmedit", "lmico", "smico" ]
+      self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico" ]
     
       gpslogutil.GpsLogSettings.__init__(self, desc, "gpsloglm.settings")
       self.__apply()
+      
 
     def __apply(self):
       for attr in self.ONOFFS:
@@ -143,8 +201,11 @@ if landmarks != None:
       
       if not self.wptcat in self.catnames:
         self.wptcat = self.categories[0][0]
-
       self.wptcat = self.cat(self.wptcat)[1]
+
+      if not self.warncat in self.catnames:
+        self.warncat = self.categories[0][0]
+      self.warncat = self.cat(self.warncat)[1]
 
     def __cnvt(self):
       for attr in self.ONOFFS:
@@ -158,6 +219,11 @@ if landmarks != None:
       except:
         self.wptcat = self.categories[0]
     
+      try:
+        self.warncat = self.cat(self.warncat)[0]
+      except:
+        self.warncat = self.categories[0]
+      
     def __loadCat(self):
       self.categories = [ ("(None)", landmarks.KPosLmNullGlobalCategory), # :-)) == 0
                           ("(Create New)", -1) ]
@@ -196,6 +262,7 @@ if landmarks != None:
       for nm, icon in ICON_DEF[1:]:
         if not nm in self.catnames:
           CreateCat(nm, nm)
+        SetCatIcons(nm)
       appuifw.note(u"Please close and re-open Landmark settings", "conf")
     
     def execute_dialog(self):
@@ -207,7 +274,8 @@ if landmarks != None:
         (u"Add Default Categories", self.addDefCat),
       ]
 
-      oldcat = self.wptcat
+      oldcat  = self.wptcat
+      oldwarn = self.warncat
 
       try:
         gpslogutil.GpsLogSettings.execute_dialog(self, menu)
@@ -224,10 +292,13 @@ if landmarks != None:
       if self.wptcat == -1:
         if not self.newCategory():
           self.wptcat = oldcat
+      elif self.warncat == -1:
+        if not self.newCategory(wptcat=False):
+          self.warncat = oldwarn
         
       self.save()
 
-    def newCategory(self):
+    def newCategory(self, wptcat=True):
       while True:
         ncat = appuifw.query(u"New Category", "text", u"GPS Log")
         if ncat == None or ncat not in self.catnames:
@@ -269,7 +340,9 @@ if landmarks != None:
 
       CreateCat(ncat, icon)
       
-      self.wptcat = id; self.categories += [ (ncat, id) ]
+      if wptcat: self.wptcat  = id
+      else:      self.warncat = id
+      self.categories += [ (ncat, id) ]
       self.save()
       self.__init__()
 

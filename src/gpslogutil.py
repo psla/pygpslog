@@ -1,6 +1,12 @@
-import os, time, e32, e32dbm
-import settings
+import os, sys, time
 from math import *
+
+if sys.platform.startswith("symbian"):
+  import e32, e32dbm
+  import settings
+  SYMBIAN=True
+else:
+  SYMBIAN=False
 from IndentedXMLWriter import XMLWriter
 
 FIXTYPES        = ["none","2D","3D","dgps"]
@@ -10,7 +16,7 @@ DAYS_SINCE_1990	= 25569
 SECONDS_PER_DAY = 24*3600
 
 DEF_LOGDIR   = (os.path.isdir("E:\Data") and  "E:\Data\GpsLog") or "C:\Data\GpsLog"
-if e32.in_emulator(): DEF_LOGDIR = r"c:\python"
+if SYMBIAN and e32.in_emulator(): DEF_LOGDIR = r"c:\python"
 
 def isoformat(ts):
   return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
@@ -34,7 +40,10 @@ def sorted(itrbl):
 
 def Deg2Rad(x):
     "Degrees to radians."
-    return x * (pi/180)
+    return x * (pi/180.0)
+    
+def Rad2Deg(x):
+    return x * 180.0 / pi
 
 def CalcRad(lat):
     "Radius of curvature in meters at specified latitude."
@@ -96,13 +105,26 @@ def simpleDistance(p1, p2):
     return 0.0
   return d
   
+def simpleMidpoint(p1, p2):
+  """http://www.movable-type.co.uk/scripts/latlong.html"""
+  dLon = Deg2Rad(p2[1]-p1[1])
+  lat1, lon1 = Deg2Rad(p1[0]), Deg2Rad(p1[1])
+  lat2, lon2 = Deg2Rad(p2[0]), Deg2Rad(p2[1])
+  Bx = cos(lat2) * cos(dLon)
+  By = cos(lat2) * sin(dLon)
+  lat3 = atan2(sin(lat1)+sin(lat2),
+               sqrt((cos(lat1)+Bx)*(cos(lat1)+Bx) +  By*By ) )
+  lon3 = lon1 + atan2(By, cos(lat1) + Bx)
+  return Rad2Deg(lat3), Rad2Deg(lon3)
+  
 
 distance = earthDistance
+midpoint = simpleMidpoint
 
 class Waypoint(list):
   FIELDS = [ "name", "lat", "lon", "alt", "time",
              "speed","hdg", "fix", "hdop","vdop", "pdop",
-             "hacc", "vacc" ]
+             "hacc", "vacc", "attr" ]
   
   def __idx(self, name):
     if not name in self.FIELDS:
@@ -114,6 +136,15 @@ class Waypoint(list):
 
   def __setattr__(self, name, val):
     self[self.__idx(name)] = val
+
+  def distance(self, other):
+    d = distance(other, (self.lat, self.lon))
+    try: 
+      r = self.attr["radius"]
+      if d <= r: d = 0.0
+      else:      d -= r
+    except (KeyError, TypeError): pass
+    return d
 
 class GpsLogfile(object):
   def __init__(self, logname=None, logdir=DEF_LOGDIR, ext=".log"):
@@ -137,13 +168,13 @@ class GpsLogfile(object):
       self.dist   += distance(gps.position, self.prev)
     self.prev      = gps.position
     
-  def waypoint(self, gps, name=None):
+  def waypoint(self, gps, name=None, attr=None):
     if name == None: name = "Waypoint %d" % (len(self.waypts)+1)
     alt = (hasattr(gps, "corralt") and gps.corralt) or gps.alt
     self.waypts += [ Waypoint((name, gps.lat,  gps.lon,  alt,  gps.time,
                               gps.speed,gps.hdg,  gps.fix,
                               gps.hdop, gps.vdop, gps.pdop,
-                              gps.hacc, gps.vacc)) ]
+                              gps.hacc, gps.vacc, attr)) ]
     return self.waypts[-1]
 
   def waypoints(self):
@@ -225,20 +256,23 @@ class GpxLogfile(GpsLogfile):
     if comment: comment = " ("+comment+")"
 
     self.gpx.start("gpx",
-      {"version":   "1.0", "creator": "GpsLog for S60%s" % comment,
+      {"version":   "1.1", "creator": "GpsLog for S60%s" % comment,
        "xmlns:xsi":          "http://www.w3.org/2001/XMLSchema-instance",
-       "xmlns":              "http://www.topografix.com/GPX/1/0",
-       "xmlns:gpslog":       "http://www.johler.ph/s60gpslog",
-       "xsi:schemaLocation": "http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd",
+       "xmlns":              "http://www.topografix.com/GPX/1/1",
+       "xmlns:gpslog":       "http://pygpslog.googlecode.com",
+       "xsi:schemaLocation": "http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog.xsd "\
+                             "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
       })
   
+    self.gpx.start("metadata")
     self.gpx.start("time")
     self.gpx.data(isoformat(self.ts))
     self.gpx.end("time")
+    self.gpx.end("metadata")
     self.gpx.start("trk")
     self.gpx.start("trkseg")
 
-  def format(self, gps, skipped=0, name=None):
+  def format(self, gps, skipped=0, name=None, attr=None):
     super(GpxLogfile, self).format(gps, skipped)
     
     if skipped:
@@ -267,7 +301,9 @@ class GpxLogfile(GpsLogfile):
         self.gpx.start("vdop");  self.gpx.data("%.1f"%gps.vdop); self.gpx.end()
       if gps.pdop != None:
         self.gpx.start("pdop");  self.gpx.data("%.1f"%gps.pdop); self.gpx.end()
+    if self.extended or attr:
       self.gpx.start("extensions")
+    if self.extended:
       if gps.speed != None:
         self.gpx.start("gpslog:speed"); self.gpx.data("%.2f"%gps.speed); self.gpx.end()
       if gps.hdg != None:
@@ -283,13 +319,24 @@ class GpxLogfile(GpsLogfile):
                          prn=str(s.prn), az=str(s.azimuth), ele=str(s.elevation),
                          signal=str(s.signal), used=(s.used and "true") or "false")
           self.gpx.end()
+    if attr:
+      for key in sorted(attr.keys()):
+        if type(attr[key]) == tuple:
+          xmlatt, data = attr[key]
+        else:
+          xmlatt, dat  = None, attr[key]
+        self.gpx.start(key, **xmlatt);
+        if data != None:
+          self.gpx.data(data);
+        self.gpx.end()
+    if self.extended or attr:
       self.gpx.end("extensions")
 
     self.gpx.end("trkpt")
 
-  def waypoint(self, gps, name=None):
-    wpt = super(GpxLogfile, self).waypoint(gps, name)
-    self.format(gps, name=wpt[0])
+  def waypoint(self, gps, name=None, attr=None):
+    wpt = super(GpxLogfile, self).waypoint(gps, name, attr)
+    self.format(gps, name=wpt[0], attr=attr)
     return wpt
 
   def close(self):
@@ -304,40 +351,41 @@ class GpxLogfile(GpsLogfile):
     if self.tracks() == 0:
       os.remove(self.name())
 
-class GpsLogSettings(settings.Settings):
-  def __init__(self, desc_list, fname):
-    self.ext_desc_list = desc_list
-    dl = []; self.hide = {}
-    for (nm, tp, ls, vl) in desc_list:
-      if type(nm) in [tuple, list] and len(nm) > 2:
-        nm, dsp, hide = nm
-        if hide: self.hide[nm] = hide
-        nm = (nm, dsp)
-      dl += [(nm,tp,ls,vl)]
-    settings.Settings.__init__(self, dl, fname)
+if SYMBIAN:
+  class GpsLogSettings(settings.Settings):
+    def __init__(self, desc_list, fname):
+      self.ext_desc_list = desc_list
+      dl = []; self.hide = {}
+      for (nm, tp, ls, vl) in desc_list:
+        if type(nm) in [tuple, list] and len(nm) > 2:
+          nm, dsp, hide = nm
+          if hide: self.hide[nm] = hide
+          nm = (nm, dsp)
+        dl += [(nm,tp,ls,vl)]
+      settings.Settings.__init__(self, dl, fname)
 
-  def execute_dialog(self, menu=None):
-    saveDl = self.desc_list[:]
-    self.desc_list = [ d for d in self.desc_list if d[0] not in self.hide ]
-    settings.Settings.execute_dialog(self, menu)
-    self.desc_list = saveDl[:]
+    def execute_dialog(self, menu=None):
+      saveDl = self.desc_list[:]
+      self.desc_list = [ d for d in self.desc_list if d[0] not in self.hide ]
+      settings.Settings.execute_dialog(self, menu)
+      self.desc_list = saveDl[:]
 
-  def save(self):
-    db = e32dbm.open(self.fname, "c")
-    for (name, type, lst, value) in self.desc_list:
-      db[name] = str(eval("self." + name))
-    db.reorganize()
-    db.close()
+    def save(self):
+      db = e32dbm.open(self.fname, "c")
+      for (name, type, lst, value) in self.desc_list:
+        db[name] = str(eval("self." + name))
+      db.reorganize()
+      db.close()
   
 
-  def areNew(self):
-    db = e32dbm.open(self.fname, "c")
-    neew = not db.has_key(self.desc_list[0][0])
-    db.close()
-    return neew
+    def areNew(self):
+      db = e32dbm.open(self.fname, "c")
+      neew = not db.has_key(self.desc_list[0][0])
+      db.close()
+      return neew
 
-  def reset(self):
-    if os.path.exists(self.fname+".e32dbm"):
-      os.remove(self.fname+".e32dbm")
-    self.__init__(self.ext_desc_list, os.path.basename(self.fname))
+    def reset(self):
+      if os.path.exists(self.fname+".e32dbm"):
+        os.remove(self.fname+".e32dbm")
+      self.__init__(self.ext_desc_list, os.path.basename(self.fname))
     
