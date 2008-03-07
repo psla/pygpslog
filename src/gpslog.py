@@ -14,7 +14,7 @@ gpssplash.show("Initializing...")
 import gpsloglm  
 if e32.in_emulator(): reload(gpsloglm)
 
-gpssplash.show("Initializing....")
+gpssplash.show("Loading User Icons...")
 import gpslogimg
 if e32.in_emulator(): reload(gpslogimg)
 
@@ -36,9 +36,11 @@ DISP_SATGRAPH   = 1
 DISP_COMPASS    = 2
 DISP_LANDMARK   = 3
 DISP_TMP        = 4
+DISP_OFF        = 5
 DISP_SAT        = 99 # unused, will disappear
 DISPMODES       = [ (DISP_NORM, "GpsLog"),    (DISP_SATGRAPH, "Satellite View"),
-                    (DISP_COMPASS, "Compass"),(DISP_LANDMARK, "Landmarks") ] #, (DISP_TMP, "Tmp")] # , (DISP_SAT, "Satellite Data")]
+                    (DISP_COMPASS, "Compass"),(DISP_LANDMARK, "Landmarks"), 
+                    (DISP_OFF, "Powersave") ] #, (DISP_TMP, "Tmp")] # , (DISP_SAT, "Satellite Data")]
 TRAVELMODES     = [ ("City", 40, 50, 70), ("Overland", 100, 120, 140), ("Highway", 130, 160, 250) ]
 INTERNAL_GPS    = u"Nokia Positioning"
 LOCREQ_GPS      = u"Location Requestor"
@@ -196,7 +198,8 @@ class GpsLog(object):
       ico.draw(img, pos=(x,h-84), alpha=0x7f7f7f)
       x -= ico.img.size[0] + 5
       
-    if self.lmsettings.uselm and self.lmsettings.warncat and self.gps:
+    if self.lmsettings.uselm and self.lmsettings.warncat and\
+       not self.lmsettings.lmico and self.gps:
       
       nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
                                    cat=self.lmsettings.warncat,
@@ -221,13 +224,21 @@ class GpsLog(object):
 
     global line
 
-    gps = self.gps
-
     font  = self.font
     bold  = font[:2] + ( font[2] | graphics.FONT_BOLD, )
     large = (font[0], font[1] * 5 / 3, font[2] | graphics.FONT_BOLD)
     small = (font[0], font[1] * 3 / 4, font[2])
     smit  = (font[0], font[1] * 3 / 4, font[2] | graphics.FONT_ITALIC)
+
+    gps = self.gps
+
+    #------------------------------------------------------------------------
+    if self.dispmode() == DISP_OFF and self.gps != None and gps.dataAvailable():
+      if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
+        self.prevsat = gps.time
+        self.view.clear(0);
+        self.view.text((2, 20), u"Display is off", fill=0xafafaf, font=bold)
+      return
 
     def prnt(x, y, text, font=font, fill=0):
       text = unicode(text)
@@ -444,12 +455,12 @@ class GpsLog(object):
         self.view.rectangle(((w-52,h-20),(w,h)), 0xffffff, fill=0xffffff)
 
     #----------------------------------------------------------------------
-    elif self.dispmode() == DISP_LANDMARK:
+    elif self.dispmode() == DISP_LANDMARK and self.lmsettings.uselm:
       hl   = -self.view.measure_text(u"M", bold)[0][1] + 3
       line = hl
       ucol = w/4 - 2
-      dcol = w/3 + 18
-      icol = dcol - 18
+      dcol = w/3 + 16
+      icol = dcol - 16
       fnt, bld = font, bold
       if w < 210: font, bld = small, font
       
@@ -503,10 +514,14 @@ class GpsLog(object):
 
   ############################################################################
   def showLandmarks(self):
+    if not self.lmsettings.uselm:
+      return # temporarily disabled
+      
     if self.gps == None or not self.gps.dataAvailable():
       if self.view != None:
         appuifw.app.body = self.view
       return self.drawGraph()
+
     if not self.gps.lat or not self.gps.lon:
        return
 
@@ -554,7 +569,7 @@ class GpsLog(object):
   ############################################################################
   def display(self, immediately=False):
   
-    if immediately  and self.dispmode() == DISP_SATGRAPH:
+    if immediately  and self.dispmode() in [DISP_SATGRAPH, DISP_OFF]:
       self.settings.satupd = -abs(self.settings.satupd)
 
     appuifw.app.title = unicode(self.modetitle())
@@ -577,7 +592,6 @@ class GpsLog(object):
       if DEBUG: raise
       self.stop(display=False)
 
-    
   ############################################################################
   def dispmode(self):
     return self.dispmodes[0][0]
@@ -712,7 +726,7 @@ class GpsLog(object):
   ############################################################################
   def gpsCallback(self, gps):
 
-    if self.backlight and self.focus:
+    if self.backlight and self.focus and self.dispmode() != DISP_OFF:
       e32.reset_inactivity()
       
     if self.paused:
@@ -821,7 +835,7 @@ class GpsLog(object):
 
     except SymbianError, exc:
       if exc[0]==-46: # KErrPermissionDenied
-        if not DEBUG: appuifw.note(u"Permission denied. Did you sign pygpslog? See README ", "error")
+        if not DEBUG: appuifw.note(u"Permission denied. Did you sign GpsLog? See README.", "error")
       else:
         if not DEBUG: appuifw.note(u"Module failed to start. (%s)" % str(exc), "error")
       if DEBUG: raise
@@ -875,7 +889,7 @@ class GpsLog(object):
   ############################################################################
   def initializeSettings(self, msg="Please check your settings"):
     
-    SETTINGS_VER = 3
+    SETTINGS_VER = 4
 
     DEFDESC = [
       (("backlight", "Keep Backlight On"), "combo",   [u"on", u"off"], u"off"),
