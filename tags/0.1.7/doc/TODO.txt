@@ -1,0 +1,22 @@
+Better packaging process
+User Icon sets
+Limit Landmark Categories
+Search icon file properly
+
+inline documentation
+gpslib: simulation provider (GPX, OZI)
+
+Metric/Imperial
+
+Done:
+  Display Off Mode
+  Convert icons to jpgs
+  Speed begin-end
+  Alt. correction
+  Larger spd/hdg display
+  show recorded time
+  switch backlight off on focus lost
+  Check GPS-Type availability
+  Travel Modes (Walk, City, Highway, ...)
+  Waypoint marker
+  Skip erratic altitudes
