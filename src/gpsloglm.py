@@ -27,7 +27,7 @@ if landmarks != None:
   findIcons()
   
   ICON_DEF = [ 
-    ("Default", 0x4000),  ("GPS Log", 0x4000),  ("Speed",     0x400A),
+    ("Default",  0x4000), ("GPS Log",  0x4000), ("Speed",     0x400A),
     ("Speed 30", 0x4002), ("Speed 50", 0x4004), ("Speed 60",  0x4006),
     ("Speed 70", 0x4008), ("Speed 80", 0x400A), ("Speed 100", 0x400C),
   ]
@@ -51,7 +51,7 @@ if landmarks != None:
     id  = cm.AddCategory(c)
     c.Close(); cm.Close(); db.Close()
       
-  def SearchLm(crit, max=-1, asWpt=False, db=None):
+  def SearchLm(crit, max=-1, asWpt=False, opOR=False, db=None):
     if db != None: sdb = db
     else:          sdb = OpenDb()
     if type(crit) not in (tuple, list): critList = [ crit ]
@@ -61,12 +61,14 @@ if landmarks != None:
       # we're only doing this because CompositeCriteria crashes the app:
       # So let's chain the searches
       prevOnly = False
+      res = []
       for crit in critList:
+        if not opOR: res = []
+        else:        prevOnly = False
         op   = srch.StartLandmarkSearch(crit, landmarks.ENoAttribute, 0, prevOnly)
         if max >= 0:
           srch.SetMaxNumOfMatches(max)
         op.Execute(); op.Close()
-        res = []
         if srch.NumOfMatches() > 0: # ??? see landmarks doc
           it = srch.MatchIterator()
           id = it.Next()
@@ -169,6 +171,7 @@ if landmarks != None:
     catnames = property(lambda self: [ c[0] for c in self.categories ])
     catids   = property(lambda self: [ c[1] for c in self.categories ])
 
+    ##########################################################################
     def __init__(self, _desc_list=None, _fname=None):
     
       self.__loadCat()
@@ -183,7 +186,7 @@ if landmarks != None:
         (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
-        (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"on"),
+        (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"off"),
         (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
       ]
       self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico" ]
@@ -191,7 +194,7 @@ if landmarks != None:
       gpslogutil.GpsLogSettings.__init__(self, desc, "gpsloglm.settings")
       self.__apply()
       
-
+    ##########################################################################
     def __apply(self):
       for attr in self.ONOFFS:
        setattr(self, attr, getattr(self, attr)  == "on")
@@ -207,6 +210,7 @@ if landmarks != None:
         self.warncat = self.categories[0][0]
       self.warncat = self.cat(self.warncat)[1]
 
+    ##########################################################################
     def __cnvt(self):
       for attr in self.ONOFFS:
         setattr(self, attr,  (getattr(self, attr)  and "on") or "off")
@@ -224,6 +228,7 @@ if landmarks != None:
       except:
         self.warncat = self.categories[0]
       
+    ##########################################################################
     def __loadCat(self):
       self.categories = [ ("(None)", landmarks.KPosLmNullGlobalCategory), # :-)) == 0
                           ("(Create New)", -1) ]
@@ -240,12 +245,14 @@ if landmarks != None:
       cm.Close()
       db.Close()
     
+    ##########################################################################
     def cat(self, idx):
       if isinstance(idx, (str, unicode)): # name as index
         return [ c for c in self.categories if unicode(c[0]) == unicode(idx)][0]
       else: # id as index
         return [ c for c in self.categories if c[1] == idx][0]
 
+    ##########################################################################
     def lmeditor(self):
       try:
         rc = e32.start_exe(ur"Z:\sys\bin\landmarks.exe", u"", True)
@@ -257,7 +264,7 @@ if landmarks != None:
         appuifw.note(u"Cannot Start Landmark Editor", "error")
         if e32.in_emulator(): raise
 
-        
+    ##########################################################################
     def addDefCat(self):
       for nm, icon in ICON_DEF[1:]:
         if not nm in self.catnames:
@@ -265,39 +272,48 @@ if landmarks != None:
         SetCatIcons(nm)
       appuifw.note(u"Please close and re-open Landmark settings", "conf")
     
+    ##########################################################################
     def execute_dialog(self):
-      self.__init__() # Categories may have been changed by other app!
-      self.__cnvt()
-
-      menu = [
-        (u"Landmark Editor", self.lmeditor),
-        (u"Add Default Categories", self.addDefCat),
-      ]
-
-      oldcat  = self.wptcat
-      oldwarn = self.warncat
-
+      self.uselm = False
       try:
-        gpslogutil.GpsLogSettings.execute_dialog(self, menu)
-      except:
-        self.reset()
-        self.__init__()
-        self.save()
-        appuifw.note(u"Settings have been reset (new version?)", "error")
-        gpslogutil.GpsLogSettings.execute_dialog(self, menu)
-        
+        self.__init__() # Categories may have been changed by other app!
+        self.__cnvt()
 
-      self.__apply()
+        menu = [
+          (u"Landmark Editor", self.lmeditor),
+          (u"Add Default Categories", self.addDefCat),
+        ]
+
+        oldcat  = self.wptcat
+        oldwarn = self.warncat
+
+        try:
+          gpslogutil.GpsLogSettings.execute_dialog(self, menu)
+        except:
+          self.reset()
+          self.__init__()
+          self.save()
+          appuifw.note(u"Settings have been reset (new version?)", "error")
+          gpslogutil.GpsLogSettings.execute_dialog(self, menu)
+        
+        if self.lmico == "on":
+          rc = appuifw.query(u"Icons are an experimental feature! Enable?", "query")
+          if not rc: self.lmico = "off"
+            
+        self.__apply()
       
-      if self.wptcat == -1:
-        if not self.newCategory():
-          self.wptcat = oldcat
-      elif self.warncat == -1:
-        if not self.newCategory(wptcat=False):
-          self.warncat = oldwarn
+        if self.wptcat == -1:
+          if not self.newCategory():
+            self.wptcat = oldcat
+        elif self.warncat == -1:
+          if not self.newCategory(wptcat=False):
+            self.warncat = oldwarn
         
-      self.save()
+        self.save()
+      finally:
+        self.uselm = True
 
+    ##########################################################################
     def newCategory(self, wptcat=True):
       while True:
         ncat = appuifw.query(u"New Category", "text", u"GPS Log")
@@ -348,6 +364,7 @@ if landmarks != None:
 
       return True
 
+    ##########################################################################
     def save(self):
       self.__cnvt()
       gpslogutil.GpsLogSettings.save(self)
