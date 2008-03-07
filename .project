@@ -18,4 +18,11 @@
 	</buildSpec>
 	<natures>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>doc/Wiki</name>
+			<type>2</type>
+			<location>E:/Develop/Python/Proj/S60/Doc/pygpslog</location>
+		</link>
+	</linkedResources>
 </projectDescription>

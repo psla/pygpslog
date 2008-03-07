@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, stat
 sys.path += [ "..\util" ]
 # !!! assert sys.version_info < (2,3,0), "Please run under Python 2.2!"
 
@@ -19,7 +19,9 @@ setup_opts = {
   "uid":     SYMBIAN_UID,               # open uid
   "suid":    findUid(appname, srcdir),  # signed uid
   "version": findVersion(appname, srcdir),
-  "copy":  [("../../GPS/gpslib/*.py", "src/gpslib")],
+  "copy":  [ ("../../GPS/gpslib/*.py", "src/gpslib"),
+             ("../Doc/pygpslog/README.wiki", "doc/README"),
+  ],
   "text":  "src/disclaimer.txt",
   "cert":  sys.argv[1], "key":   sys.argv[2], "pwd":   sys.argv[3],
   "icon":  "icons\%s.svg" % appname,
@@ -29,16 +31,16 @@ setup_opts = {
 
   "keep":  True,
 }
-
-
 merges = [ r"E:\Develop\Python\Proj\S60\Carbide\modules\LocationRequestor\sis\LocationReq_3rd.sisx",
            r"E:\Develop\Python\Proj\S60\Carbide\modules\Landmarks\sis\Landmarks_3rd.sisx" ]
 mergeu = [ m.replace(".sisx", "_unsigned.sis") for m in merges ]
 
+for src, dst in setup_opts["copy"]: os.chmod(dst, stat.S_IWRITE|stat.S_IREAD)
+
 sisfiles = setup(appname, srcdir, **setup_opts)
-# sisfiles = { "Unsigned - Binary": r"dist\PyGpsLog-unsigned.sis",
-#              "Signed - Binary":   r"dist\PyGpsLog.sis", }
 
 mergesis(sisfiles["Signed - Binary"],   merges, sisfiles["Signed - Binary"].replace(".sis","-bundled.sis"), **setup_opts)
 # Embedded sis files don't get signed :-(
 # mergesis(sisfiles["Unsigned - Binary"], mergeu, sisfiles["Unsigned - Binary"].replace(".sis","-bundled.sis"))
+
+for src, dst in setup_opts["copy"]: os.chmod(dst, stat.S_IREAD)
