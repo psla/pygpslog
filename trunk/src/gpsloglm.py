@@ -266,10 +266,14 @@ if landmarks != None:
 
     ##########################################################################
     def addDefCat(self):
-      for nm, icon in ICON_DEF[1:]:
-        if not nm in self.catnames:
-          CreateCat(nm, nm)
-        SetCatIcons(nm)
+      try:
+        for nm, icon in ICON_DEF[1:]:
+          if not nm in self.catnames:
+            CreateCat(nm, nm)
+          SetCatIcons(nm)
+      except Exception, exc:
+        appuifw.note(u"An error occurred: %s" % str(exc), "error")
+        
       appuifw.note(u"Please close and re-open Landmark settings", "conf")
     
     ##########################################################################
