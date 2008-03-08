@@ -1,4 +1,4 @@
-# SIS_VERSION="0.1.7"
+# SIS_VERSION="0.1.8"
 # SYMBIAN_UID=0xA0005B76
 
 import sys, os, traceback

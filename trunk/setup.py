@@ -29,7 +29,7 @@ setup_opts = {
 # "bin":  None,
   "drive": "C",  # sorry!
 
-  "keep":  True,
+# "keep":  True,
 }
 merges = [ r"E:\Develop\Python\Proj\S60\Carbide\modules\LocationRequestor\sis\LocationReq_3rd.sisx",
            r"E:\Develop\Python\Proj\S60\Carbide\modules\Landmarks\sis\Landmarks_3rd.sisx" ]
