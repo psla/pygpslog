@@ -201,9 +201,14 @@ class GpsLog(object):
     if self.lmsettings.uselm and self.lmsettings.warncat and\
        not self.lmsettings.lmico and self.gps:
       
-      nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
-                                   cat=self.lmsettings.warncat,
-                                   max=1, maxdist=self.lmsettings.warnrad)
+      try:
+        nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
+                                     cat=self.lmsettings.warncat,
+                                     max=1, maxdist=self.lmsettings.warnrad)
+      except:
+        if DEBUG: raise
+        nearest = None
+
       if nearest:
         nearest, svgico = nearest[0]
         try:    cat = self.lmsettings.cat(nearest.attr["categories"][0])[0]
@@ -489,12 +494,19 @@ class GpsLog(object):
         if ico: ico.draw(img, (icol, line-hl), (hl,hl))
         line += hl
 
-      nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
-                                   max=32, maxdist=self.lmsettings.radius*1000.0)
+      try:
+        nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
+                                     max=32, maxdist=self.lmsettings.radius*1000.0)
+      except:
+        if DEBUG: raise
+        nearest = []
+        
       saveline = line
 
       for lm in nearest:
         icon(lm, img)
+        if line + hl > h:
+          break
         
       line = saveline
       blit(img)
@@ -525,8 +537,12 @@ class GpsLog(object):
     if not self.gps.lat or not self.gps.lon:
        return
 
-    nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
-                                 max=32, maxdist=self.lmsettings.radius*1000.0)
+    try:
+      nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
+                                   max=32, maxdist=self.lmsettings.radius*1000.0)
+    except:
+      if DEBUG: raise
+      nearest = []
 
     # defico = appuifw.Icon(u"Z:\\resource\\apps\\lmkui.mif", 16386, 16384)
     defico = gpsloglm.MKICON(gpsloglm.ICONS["Default"])
