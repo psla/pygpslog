@@ -74,7 +74,7 @@ e-mail automagically ;-)
  # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
  # Get the [http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis LocationRequestor] module.
  # Get the [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis Landmarks] module.
- # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?q=label:Featured latest version] of pygpslog.
  # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
  # Sign !LocationRequestor, Landmarks and !PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
  # Install to your device
