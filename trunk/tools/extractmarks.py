@@ -8,7 +8,6 @@ try:      import cElementTree as ET, elementtree.ElementTree as _ET
 except:
   try:    import elementtree.ElementTree as ET, elementtree.ElementTree as _ET
   except: import xml.etree.cElementTree as ET, xml.etree.ElementTree as _ET
-from elementtree import XMLTreeBuilder
 
 BABEL   = r"F:\UTIL\GPS\gpsbabel\gpsbabel-cvs\build\gpsbabel.exe"
 
@@ -74,7 +73,7 @@ def extractMarks(srcGpx, dstGpx=None):
   if ET.iselement(srcGpx):
     sroot = srcGpx
   else:
-    src   = ET.parse(srcGpx) # , ET.XMLTreeBuilder()) # , GpxParser())
+    src   = ET.parse(srcGpx)
     sroot = src.getroot()
 
   
@@ -129,7 +128,7 @@ def writeGpx(root, dstGpx):
   f = file(dstGpx, "w"); f.write(out); f.close()
 
 
-def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"]):
+def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
   sroot = gpx # gpx.getroot()
   root  = ET.Element("{%s}lmx"%LMX_NS)
   root.set("{%s}schemaLocation"%XMLN_NS,  LMX_XSD)
@@ -150,44 +149,76 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"]):
     tpts = trk.findall("trkseg/trkpt")
     if len(tpts) == 0: continue
     
-    la1, lo1, la2, lo2 = tpts[0].get("lat"), tpts[0].get("lon"), \
-                         tpts[-1].get("lat"), tpts[-1].get("lon")
-    la1, lo1, la2, lo2 = [ float(f) for f in [la1, lo1, la2, lo2]]
-    lat, lon = midpoint((la1,lo1), (la2, lo2))
-    rad      = distance((la1,lo1), (la2, lo2)) / 2.0
+    def coor(tpt):
+      return float(tpt.get("lat")), float(tpt.get("lon"))
+      
+    def findnext(idx, dist):
+      pt1 = coor(tpts[idx])
+      i = 0
+      for i in range(idx+1, len(tpts)):
+        d = distance(pt1, coor(tpts[i]))
+        if d >= dist: break
+      if i >= len(tpts)-1:
+        return -1
+        
+      return i
+      
+    r = distance(coor(tpts[0]), coor(tpts[-1]))/2.0
+    if maxrad != None and r > maxrad:
+      maxdist = r/(int(r/maxrad)+1)*2
+    else:
+      maxdist = None
+      
+    if maxdist == None: prev, next, ctr = 0, -1, 0
+    else:               prev, next, ctr = 0, findnext(0, maxdist), 1
     
-    name     = trk.findtext("name").strip().capitalize()
-    desc     = trk.find("desc")
-    if desc == None: desc = rtime + "%d" % selfcnt; selfcnt += 1
-    else:            desc = desc.text
-    if not desc.startswith(name):
-      desc     = name + " - " + desc.strip()
-    lm = ET.SubElement(coll, "{%s}landmark"%LMX_NS)
-    nm = ET.SubElement(lm,   "{%s}name"%LMX_NS);
-    nm.text = desc
-    co = ET.SubElement(lm,   "{%s}coordinates"%LMX_NS);
-    la = ET.SubElement(co,   "{%s}latitude"%LMX_NS);
-    lo = ET.SubElement(co,   "{%s}longitude"%LMX_NS);
-    la.text, lo.text = "%f" % lat, "%f" % lon
-    al = tpts[len(tpts)/2].findtext("ele")
-    if al != None: ET.SubElement(co,   "{%s}altitude"%LMX_NS).text=al
-    acc= tpts[len(tpts)/2].findtext("extensions/{%s}hacc"%MY_NS)
-    if acc!= None: ET.SubElement(co,   "{%s}horizontalAccuracy"%LMX_NS).text=acc
-    acc= tpts[len(tpts)/2].findtext("extensions/{%s}vacc"%MY_NS)
-    if acc!= None: ET.SubElement(co,   "{%s}verticalAccuracy"%LMX_NS).text=acc
-    cr = ET.SubElement(lm,   "{%s}coverageRadius"%LMX_NS);
-    cr.text = "%.1f" % rad
-    for cat in [ name ] + addtlCat:
-      ca = ET.SubElement(lm,   "{%s}category"%LMX_NS);
-      cn = ET.SubElement(ca,   "{%s}name"%LMX_NS);
-      cn.text = cat
-      cn.tail = "\n      "; ca.text = "\n        "; ca.tail = "\n      ";
+    while True:
+      pt1 , pt2 = coor(tpts[prev]), coor(tpts[next])
+      lat, lon = midpoint(pt1, pt2)
+      rad      = distance(pt1, pt2) / 2.0
+      
+      if rad < 1.0:  break
     
-    nm.tail = "\n      "; cn.tail = "\n      ";
-    co.tail = "\n      "; co.text = "\n        ";
-    cr.tail = "\n      "; ca.tail = "\n    ";
-    lm.text = "\n      "; lm.tail = "\n    "
+      name     = trk.findtext("name").strip().capitalize()
+      desc     = trk.find("desc")
+      if desc == None: desc = rtime + "%d" % selfcnt; selfcnt += 1
+      else:            desc = desc.text
+      if not desc.startswith(name):
+        desc     = name + " - " + desc.strip()
+      if ctr: desc += " - %d" % ctr
+      lm = ET.SubElement(coll, "{%s}landmark"%LMX_NS)
+      nm = ET.SubElement(lm,   "{%s}name"%LMX_NS);
+      nm.text = desc
+      co = ET.SubElement(lm,   "{%s}coordinates"%LMX_NS);
+      la = ET.SubElement(co,   "{%s}latitude"%LMX_NS);
+      lo = ET.SubElement(co,   "{%s}longitude"%LMX_NS);
+      la.text, lo.text = "%f" % lat, "%f" % lon
+      al = tpts[len(tpts)/2].findtext("ele")
+      if al != None: ET.SubElement(co,   "{%s}altitude"%LMX_NS).text=al
+      acc= tpts[len(tpts)/2].findtext("extensions/{%s}hacc"%MY_NS)
+      if acc!= None: ET.SubElement(co,   "{%s}horizontalAccuracy"%LMX_NS).text=acc
+      acc= tpts[len(tpts)/2].findtext("extensions/{%s}vacc"%MY_NS)
+      if acc!= None: ET.SubElement(co,   "{%s}verticalAccuracy"%LMX_NS).text=acc
+      cr = ET.SubElement(lm,   "{%s}coverageRadius"%LMX_NS);
+      cr.text = "%.1f" % rad
+      for cat in [ name ] + addtlCat:
+        ca = ET.SubElement(lm,   "{%s}category"%LMX_NS);
+        cn = ET.SubElement(ca,   "{%s}name"%LMX_NS);
+        cn.text = cat
+        cn.tail = "\n      "; ca.text = "\n        "; ca.tail = "\n      ";
     
+      nm.tail = "\n      "; cn.tail = "\n      ";
+      co.tail = "\n      "; co.text = "\n        ";
+      cr.tail = "\n      "; ca.tail = "\n    ";
+      lm.text = "\n      "; lm.tail = "\n    "
+    
+      if next < 0:
+        break
+      else:
+        prev, next = next, findnext(next, maxdist)
+      
+      ctr += 1
+
   if lm != None: lm.tail = "\n  "
   
   out = StringIO.StringIO()
@@ -335,6 +366,7 @@ def main(argv=None):
   op.add_option("-o", "--outfile",   "--gpx", )
   op.add_option("-l", "--landmarks", "--lmx")
   op.add_option("-i", "--load", "--marks", action="append", metavar="PARSEDGPX")
+  op.add_option("-m", "--maxrad",  type="int", help="maximum coverage radius")
   
   opts, args = op.parse_args()
 
@@ -377,7 +409,7 @@ def main(argv=None):
     writeGpx(out, opts.outfile)
 
   if opts.landmarks:
-    makeLandmarks(out, opts.landmarks)
+    makeLandmarks(out, opts.landmarks, maxrad=opts.maxrad)
 
   return
   
