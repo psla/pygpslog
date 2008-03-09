@@ -1,5 +1,5 @@
 #summary pygpslog Documentation.
-#labels Featured
+#labels Featured Documentation
 == CONTENTS ==
  # [#ABOUT ABOUT]
  # [#LICENSE LICENSE]
@@ -150,7 +150,8 @@ between the different modes.
  # Satellite View
  # Compass and Speed
  # Landmarks
- 
+ # Power saving mode (logfile wrting only)
+
 === Waypoints ===
 The `'0'` key inserts a waypoint into the log file. Currently, this is done
 by inserting a named trackpoint into the GPX file. For !OziExplorer files,
