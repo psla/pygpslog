@@ -61,7 +61,7 @@ def CalcRad(lat):
     # a = 6378 km (3963 mi) Equatorial radius (surface to center distance)
     # b = 6356.752 km (3950 mi) Polar radius (surface to center distance)
     # e = 0.081082 Eccentricity
-    sc = sin(Deg2Rad(lat))
+    sc = sin(lat)
     x = a * (1.0 - e2)
     z = 1.0 - e2 * sc * sc
     y = pow(z, 1.5)
@@ -72,12 +72,16 @@ def CalcRad(lat):
 
 def earthDistance((lat1, lon1), (lat2, lon2)):
     "Distance in meters between two points specified in degrees."
-    x1 = CalcRad(lat1) * cos(Deg2Rad(lon1)) * sin(Deg2Rad(90-lat1))
-    x2 = CalcRad(lat2) * cos(Deg2Rad(lon2)) * sin(Deg2Rad(90-lat2))
-    y1 = CalcRad(lat1) * sin(Deg2Rad(lon1)) * sin(Deg2Rad(90-lat1))
-    y2 = CalcRad(lat2) * sin(Deg2Rad(lon2)) * sin(Deg2Rad(90-lat2))
-    z1 = CalcRad(lat1) * cos(Deg2Rad(90-lat1))
-    z2 = CalcRad(lat2) * cos(Deg2Rad(90-lat2))
+    if (lat1, lon1) == (lat2, lon2): return 0.0
+    lat1, lon1, lat2, lon2 = [ Deg2Rad(a) for a in [lat1, lon1, lat2, lon2]]
+    r1, r2 = CalcRad(lat1), CalcRad(lat2)
+    pi2 = pi/2
+    x1 = r1 * cos(lon1) * sin(pi2-lat1)
+    x2 = r2 * cos(lon2) * sin(pi2-lat2)
+    y1 = r1 * sin(lon1) * sin(pi2-lat1)
+    y2 = r2 * sin(lon2) * sin(pi2-lat2)
+    z1 = r1 * cos(pi2-lat1)
+    z2 = r2 * cos(pi2-lat2)
     a = (x1*x2 + y1*y2 + z1*z2)/pow(CalcRad((lat1+lat2)/2),2)
     # a should be in [1, -1] but can sometimes fall outside it by
     # a very small amount due to rounding errors in the preceding
@@ -87,7 +91,6 @@ def earthDistance((lat1, lon1), (lat2, lon2)):
     elif a < -1: a = -1
     return CalcRad((lat1+lat2) / 2) * acos(a)
 
-    
 def simpleDistance(p1, p2):
   lat1, lon1 = p1
   lat2, lon2 = p2
