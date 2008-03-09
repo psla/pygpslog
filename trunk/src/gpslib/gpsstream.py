@@ -83,7 +83,7 @@ class AbstractStreamProvider(object):
   # cannot be used by any other thread
   def __thread(self, *_args, **_kwargs):
     if "--gps-debug" in sys.argv:
-      sys.path.append(r"E:\Develop\Java\eclipse32\plugins\org.python.pydev.debug_1.3.8\pysrc")
+      sys.path.append(r"E:\Develop\Java\eclipse33\plugins\org.python.pydev.debug_1.3.13\pysrc")
       import pydevd #@UnresolvedImport
       pydevd.settrace(stdoutToServer=True, stderrToServer=True)
     
