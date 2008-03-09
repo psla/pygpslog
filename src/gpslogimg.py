@@ -67,3 +67,18 @@ class GpsIcon(object):
 ICONS = dict([ (name, GpsIcon(idx)) for name, idx in ICONS ])
 
 del ALLICONS
+
+##############################################################################
+def alphaText(drawable, coord, text, fill=0, font=None, alpha=None):
+  text = unicode(text)
+  ((x1,y1, x2,y2), x, n) = drawable.measure_text(text, font=font)
+  sz = (x2-x1, y2-y1)
+  timg = Image.new(sz); timg.clear(0xffffff)
+  timg.text((0, y2-y1), text, fill=fill, font=font)
+  if alpha == None:
+    mask = None
+  else:
+    mask = Image.new(sz, 'L'); mask.clear(0x0)
+    mask.text((0, y2-y1), text, fill=alpha, font=font)
+  drawable.blit(timg, target=coord, mask=mask)
+    
