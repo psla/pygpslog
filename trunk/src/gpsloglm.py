@@ -182,7 +182,7 @@ if landmarks != None:
         (("wptlm",   "Store Waypoints as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("wptcat",  "Category for Waypoints"), "combo",  wptnames , u"(None)"),
         (("warncat", "Notify near Category"), "combo",  wptnames , u"(None)"),
-        (("warnrad", "Distance for Notfication"), "number",  [] , 100),
+        (("warnrad", "Distance for Notfication"), "number",  [] , 25),
         (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),

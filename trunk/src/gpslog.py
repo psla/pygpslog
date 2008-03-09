@@ -1,7 +1,7 @@
 # -*- coding: cp850 -*-
 import gpssplash; reload(gpssplash);
 gpssplash.show("Initializing.")
-import os, time, traceback, math
+import os, time, traceback, math, thread
 import appuifw, e32
 import graphics
 from   key_codes   import *
@@ -25,6 +25,12 @@ try:    from gpslib.gpsloc import LocationRequestorProvider
 except: LocationRequestorProvider = None
 try:    from gpslib.gpsnmea import NMEABluetoothProvider
 except: NMEABluetoothProvider = None
+if e32.in_emulator() or os.path.isdir(os.path.join(DEF_LOGDIR, "Sim")):
+  gpssplash.show("Loading Simulator...")
+  if e32.in_emulator(): import gpslib.gpssim; reload(gpslib.gpssim)
+  try:    from gpslib.gpssim import XMLSimulator
+  except: XMLSimulator = None
+else: XMLSimulator = None
 
 DEF_MINDIST  = 25 # m
 DEF_MAXDIST  = 80 # m/s = 288 km/h. Raise this when flying
@@ -44,8 +50,10 @@ DISPMODES       = [ (DISP_NORM, "GpsLog"),    (DISP_SATGRAPH, "Satellite View"),
 TRAVELMODES     = [ ("City", 40, 50, 70), ("Overland", 100, 120, 140), ("Highway", 130, 160, 250) ]
 INTERNAL_GPS    = u"Nokia Positioning"
 LOCREQ_GPS      = u"Location Requestor"
+XMLSIM_GPS      = u"XML Simulator"
 MARKERS         = gpslogimg.ICONS.keys(); MARKERS.sort(); MARKERS = (MARKERS[2:]+[MARKERS[1]])[:6]
 
+IMG_FONT        = "normal" #"title" # "dense"
 
 #DEBUG = True
 #DEBUG = False
@@ -85,6 +93,9 @@ class GpsLog(object):
     self.marker  = None
     self.markcnt = 0
     self.fmarker = None
+    self.nearest = None
+    self.gpssema = None
+    self.busy    = 0
 
     del dummy
 
@@ -188,7 +199,7 @@ class GpsLog(object):
   def handleFocus(self, focus):
     self.focus = focus
     
-  ############################################################################  
+  ############################################################################
   def drawMarkers(self, img):
     w, h = img.size
     
@@ -197,7 +208,7 @@ class GpsLog(object):
       ico = gpslogimg.ICONS[self.marker[0]]
       ico.draw(img, pos=(x,h-84), alpha=0x7f7f7f)
       x -= ico.img.size[0] + 5
-      
+     
     if self.lmsettings.uselm and self.lmsettings.warncat and\
        not self.lmsettings.lmico and self.gps:
       
@@ -216,10 +227,16 @@ class GpsLog(object):
         if cat in gpslogimg.ICONS: ico = gpslogimg.ICONS[cat]
         else:                      ico = gpslogimg.ICONS["Default"]
         ico.draw(img, pos=(x,h-84), alpha=0xcfcfcf)
+        caption = nearest.name
+        if cat and caption.startswith(cat): caption = caption[len(cat):].strip(" -")
+        gpslogimg.alphaText(img, (2, h-60), caption, 
+                            fill=0x0, alpha=0x7f7f7f, font=IMG_FONT)
         e32.ao_yield()
         self.fmarker = cat
       else:
         self.fmarker = None
+    else:
+      self.fmarker = None
 
   ############################################################################  
   def drawGraph(self, rect=None):
@@ -238,6 +255,11 @@ class GpsLog(object):
     gps = self.gps
 
     #------------------------------------------------------------------------
+    if self.busy > 0: # TODO: warn or beep or ...
+      if DEBUG: print "Busy!", self.busy, "Mode:", self.dispmode()
+      self.busy = 0
+
+    #------------------------------------------------------------------------
     if self.dispmode() == DISP_OFF and self.gps != None and gps.dataAvailable():
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
         self.prevsat = gps.time
@@ -245,6 +267,7 @@ class GpsLog(object):
         self.view.text((2, 20), u"Display is off", fill=0xafafaf, font=bold)
       return
 
+    # some helpers
     def prnt(x, y, text, font=font, fill=0):
       text = unicode(text)
       # msr = self.view.measure_text(u"MM", font)[0]
@@ -271,6 +294,7 @@ class GpsLog(object):
       loctime = time.localtime()
       gpsname = self.settings.btdevice
     
+    #------------------------------------------------------------------------
     self.drawMarkers(img)
 
     #------------------------------------------------------------------------
@@ -303,9 +327,10 @@ class GpsLog(object):
       show("Latitude",  coord(gps.lat))
       show("Longitude", coord(gps.lon,"EW"))
 
-      if gps.speed != None: show("Speed",     "%-5.1f km/h" % gps.speed)
-      if gps.alt   != None: show("Altitude",  "%-4.0f m" % gps.corralt)
-      if gps.hdg   != None: show("Heading",   u"%-4.0f\u00b0" % gps.hdg)
+      if gps.speed   != None: show("Speed",     "%-5.1f km/h" % gps.speed)
+      if getattr(gps, "corralt", None): 
+        show("Altitude",  "%-4.0f m" % gps.corralt)
+      if gps.hdg     != None: show("Heading",   u"%-4.0f\u00b0" % gps.hdg)
     
       if gps.time:
         line += hl
@@ -350,7 +375,7 @@ class GpsLog(object):
       
       if gps.hdg != None:
         prnt(2, 20, u"%.1f\u00b0" % gps.hdg, large)
-      if gps.alt != None:
+      if getattr(gps, "corralt", None) != None:
         prnt(2, 30, u"%.1f m" % gps.corralt, small)
         
       mode, low, norm, high = self.travelmode()
@@ -479,7 +504,13 @@ class GpsLog(object):
         dd = self.view.measure_text(unicode(d), fnt)[0][2]
         prnt(ucol-dd-3, line, d, fnt)
         prnt(ucol,      line, unit, fnt)
-        prnt(dcol,      line, wpt.name, bld)
+        
+        name = wpt.name
+        try:
+          cat = self.lmsettings.cat(wpt.attr["categories"][0])[0]
+          if name.startswith(cat): name = name[len(cat):].strip(" -")
+        except: pass
+        prnt(dcol,      line, name, bld)
         line += hl
         
       def icon(lm, img):
@@ -494,28 +525,43 @@ class GpsLog(object):
         if ico: ico.draw(img, (icol, line-hl), (hl,hl))
         line += hl
 
-      try:
-        nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
-                                     max=32, maxdist=self.lmsettings.radius*1000.0)
-      except:
-        if DEBUG: raise
-        nearest = []
-        
-      saveline = line
-
-      for lm in nearest:
-        icon(lm, img)
-        if line + hl > h:
-          break
-        
-      line = saveline
-      blit(img)
-
-      for lm in nearest:
-        show(lm)
-        if line + hl > h:
-          break
       
+      def searchThread():
+        try:
+          if self.nearest: return # probably still in use
+          nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
+                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0)
+          self.nearest = nearest
+        except:
+          if DEBUG: raise
+          self.nearest = []
+        
+      if self.nearest == None:
+        # thread.start_new_thread(e32.ao_callgate(searchThread), () )
+        thread.start_new_thread(searchThread, () )
+        e32.ao_yield()
+
+      if self.nearest != None:
+        saveline = line
+
+        for lm in self.nearest:
+          icon(lm, img)
+          if line + hl > h:
+            break
+        
+        line = saveline
+        blit(img)
+
+        for lm in self.nearest:
+          show(lm)
+          if line + hl > h:
+            break
+      else: # just clear the screen and redraw the name and time area
+        self.view.rectangle(((2,h-10),(w-52,h)), 0xffffff, fill=0xffffff)
+        self.view.rectangle(((w-52,h-20),(w,h)), 0xffffff, fill=0xffffff)
+
+      self.nearest = None
+
       
     prnt(2, h, gpsname, smit)
     prnt(w - 52, h-10, unicode(time.strftime("%H:%M:%S", loctime)), small)
@@ -742,61 +788,74 @@ class GpsLog(object):
   ############################################################################
   def gpsCallback(self, gps):
 
-    if self.backlight and self.focus and self.dispmode() != DISP_OFF:
-      e32.reset_inactivity()
-      
-    if self.paused:
+    if self.gpssema > 0:
+      self.busy += 1
       return
 
+    self.gpssema = 1
+
     try:
-      if not gps.ok and not self.stopping:
-        err = gps.lastError
-        if err == None: err = "GPS terminated unexpectedly"
-        raise SystemError, err
+      if self.backlight and self.focus and self.dispmode() != DISP_OFF:
+        e32.reset_inactivity()
+      
+      if self.paused:
+        return
 
-      gps.corralt = gps.alt
+      try:
+        if not gps.ok and not self.stopping:
+          err = gps.lastError
+          if err == None: err = "GPS terminated unexpectedly"
+          raise SystemError, err
+
+        gps.corralt = gps.alt
     
-      if not gps.lat and not gps.lon and not gps.alt:
+        if not gps.lat and not gps.lon and not gps.alt:
+          self.display()
+          return
+
+        if gps.corralt != None:
+          gps.corralt += self.altcorr
+
         self.display()
-        return
-
-      if gps.corralt != None:
-        gps.corralt += self.altcorr
-
-      self.display()
       
-      if not self.log:
-        return
+        if not self.log:
+          return
 
-      if self.prevrec != None and\
-         self.settings.mindist and\
-         distance(gps.position, self.prevrec) < self.settings.mindist:
-        self.prev = (gps.position, gps.alt) # sic!
-        return
-      if self.prevrec != None:
-        ppos, ppalt = self.prev
-        alt = gps.alt
-        if alt   == None: alt = 0
-        if ppalt == None: ppalt = 0
-      if self.prevrec != None and\
-         self.settings.maxdist != 0 and\
-         ( (distance(gps.position, ppos) > self.settings.maxdist) or\
-           (abs(alt-ppalt) > self.settings.maxdist / 3) ):
-        self.prev    = (gps.position, gps.alt)
-        self.ignored += 1
-        return
+        if not gps.dataAvailable() or not gps.lat:
+          return
+
+        if self.prevrec != None and\
+           self.settings.mindist and\
+           distance(gps.position, self.prevrec) < self.settings.mindist:
+          self.prev = (gps.position, gps.alt) # sic!
+          return
+        if self.prevrec != None:
+          ppos, ppalt = self.prev
+          alt = gps.alt
+          if alt   == None: alt = 0
+          if ppalt == None: ppalt = 0
+        if self.prevrec != None and\
+           self.settings.maxdist != 0 and\
+           ( (distance(gps.position, ppos) > self.settings.maxdist) or\
+             (abs(alt-ppalt) > self.settings.maxdist / 3) ):
+          self.prev    = (gps.position, gps.alt)
+          self.ignored += 1
+          return
         
-      if self.log != None:
-        self.log.format(gps, self.ignored)
+        if self.log != None:
+          self.log.format(gps, self.ignored)
       
-      self.ignored = 0
-      self.prevrec = gps.position
-      self.prev    = (gps.position, gps.alt)
+        self.ignored = 0
+        self.prevrec = gps.position
+        self.prev    = (gps.position, gps.alt)
 
-    except Exception, exc:
-      if not DEBUG: appuifw.note(u"Error processing GPS: %s" % str(exc), "error")
-      if DEBUG: raise
-      self.stop(display=False)
+      except Exception, exc:
+        if not DEBUG: appuifw.note(u"Error processing GPS: %s" % str(exc), "error")
+        if DEBUG: raise
+        self.stop(display=False)
+
+    finally:
+      self.gpssema = 0
 
   ############################################################################
   def openLog(self):
@@ -839,6 +898,12 @@ class GpsLog(object):
           self.gps = LocationRequestorProvider()
         else:
           appuifw.note(u"LocationRequestor module not installed! Please see the README.", "error")
+          return
+      elif self.settings.btdevice == XMLSIM_GPS:
+        if XMLSimulator != None:
+          self.gps = XMLSimulator(sources=os.path.join(self.settings.logdir,"sim","*.gpx"))
+        else:
+          appuifw.note(u"XMLSimulator module not installed! Please see the README.", "error")
           return
       else:
         if NMEABluetoothProvider != None:
@@ -905,7 +970,7 @@ class GpsLog(object):
   ############################################################################
   def initializeSettings(self, msg="Please check your settings"):
     
-    SETTINGS_VER = 4
+    SETTINGS_VER = 5
 
     DEFDESC = [
       (("backlight", "Keep Backlight On"), "combo",   [u"on", u"off"], u"off"),
@@ -924,6 +989,7 @@ class GpsLog(object):
       (("trvlmodes", "Travel Mode", True), "text",   [], unicode(`TRAVELMODES`)),
       (("haspos",    "Positioning avail.", True), "number",   [], 0),
       (("hasloc",    "LocationRequestor avail.", True), "number",   [], 0),
+      (("hassim",    "Simulator avail.", True), "number",   [], 0),
       (("ver",       "Setings Version", True), "number",   [], -1),
     ]
 
@@ -935,6 +1001,7 @@ class GpsLog(object):
       import gpslib
       self.settings.haspos = gpslib.hasPositioning
       self.settings.hasloc = gpslib.hasLocationRequestor
+      self.settings.hassim = (XMLSimulator != None)
       self.settings.ver    = SETTINGS_VER
       self.settings.save()
     
@@ -951,6 +1018,9 @@ class GpsLog(object):
     if self.settings.hasloc:
       gpsset[-2] += [ LOCREQ_GPS ]
       gpsset[-1] =    LOCREQ_GPS
+      
+    if self.settings.hassim:
+      gpsset[-2] += [ XMLSIM_GPS ]
       
     desc[ix] = tuple(gpsset)
 
