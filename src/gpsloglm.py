@@ -129,17 +129,19 @@ if landmarks != None:
     if radius != None:
       lm.SetCoverageRadius(radius)
     for c in cat:
-      lm.AddCategory(c)
+      if c != landmarks.KPosLmNullGlobalCategory: # :-))) You have to love it!
+        lm.AddCategory(c)
 
     db = OpenDb()
   
     if cat:
       cm = db.CreateCategoryManager()
-      c  = cm.ReadCategory(cat[0])
-      icon = c.GetIcon()
-      if icon != None:
-        lm.SetIcon(*icon)
-      c.Close()
+      if cat[0] != landmarks.KPosLmNullGlobalCategory: # :-)))))))
+        c  = cm.ReadCategory(cat[0])
+        icon = c.GetIcon()
+        if icon != None:
+          lm.SetIcon(*icon)
+        c.Close()
       cm.Close()
     # wpt.alt = None
     alt, hacc, vacc = [ (v != None and v) or NAN for v in (wpt.alt, wpt.hacc, wpt.vacc)]
