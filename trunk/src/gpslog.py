@@ -3,20 +3,28 @@ import gpssplash; reload(gpssplash);
 gpssplash.show("Initializing.")
 import os, time, traceback, math, thread
 import appuifw, e32
+
+IN_EMU = e32.in_emulator()
+DEBUG  = IN_EMU or __name__ == 'editor' or os.path.exists(r"E:\python\gpslog.dbg")
+#DEBUG = True
+#DEBUG = False
+
 import graphics
 from   key_codes   import *
-if     e32.in_emulator(): import gpslogutil; reload(gpslogutil)
+if     IN_EMU:     import gpslogutil; reload(gpslogutil)
 gpssplash.show("Initializing..")
 from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
                           coord, distance, midpoint, sorted, isoformat,\
                           DEF_LOGDIR, FIXTYPES
 gpssplash.show("Initializing...")
 import gpsloglm  
-if e32.in_emulator(): reload(gpsloglm)
+if IN_EMU: reload(gpsloglm)
+try:    from e32jext import cputime
+except: cputime = None
 
 gpssplash.show("Loading User Icons...")
 import gpslogimg
-if e32.in_emulator(): reload(gpslogimg)
+if IN_EMU: reload(gpslogimg)
 
 gpssplash.show("Loading GPS modules...")
 try:    from gpslib.gpspos import PositioningProvider
@@ -25,16 +33,18 @@ try:    from gpslib.gpsloc import LocationRequestorProvider
 except: LocationRequestorProvider = None
 try:    from gpslib.gpsnmea import NMEABluetoothProvider
 except: NMEABluetoothProvider = None
-if e32.in_emulator() or os.path.isdir(os.path.join(DEF_LOGDIR, "Sim")):
+if IN_EMU or os.path.isdir(os.path.join(DEF_LOGDIR, "Sim")):
   gpssplash.show("Loading Simulator...")
-  if e32.in_emulator(): import gpslib.gpssim; reload(gpslib.gpssim)
-  try:    from gpslib.gpssim import XMLSimulator
+  if IN_EMU: import gpslib.gpssim; reload(gpslib.gpssim)
+  try:       from gpslib.gpssim import XMLSimulator
   except: XMLSimulator = None
 else: XMLSimulator = None
 
 DEF_MINDIST  = 25 # m
 DEF_MAXDIST  = 80 # m/s = 288 km/h. Raise this when flying
 DEF_LOGFMT   = "GPX"
+MORNING      = "05"
+EVENING      = "18"
 
 DEL_THRESHOLD   = 20
 DISP_NORM       = 0
@@ -47,25 +57,40 @@ DISP_SAT        = 99 # unused, will disappear
 DISPMODES       = [ (DISP_NORM, "GpsLog"),    (DISP_SATGRAPH, "Satellite View"),
                     (DISP_COMPASS, "Compass"),(DISP_LANDMARK, "Landmarks"), 
                     (DISP_OFF, "Powersave") ] #, (DISP_TMP, "Tmp")] # , (DISP_SAT, "Satellite Data")]
+DISP_COLORS     = {
+                    "day":   (0x000000, 0xffffff,
+                              { "txtalpha": 0x707070, "satmark": 0x000000 }),
+                    "night": (0xCF0000, 0x000000,
+                              { "txtalpha": 0x808080, "satmark": 0x400000 }),
+                  }
 TRAVELMODES     = [ ("City", 40, 50, 70), ("Overland", 100, 120, 140), ("Highway", 130, 160, 250) ]
 INTERNAL_GPS    = u"Nokia Positioning"
 LOCREQ_GPS      = u"Location Requestor"
 XMLSIM_GPS      = u"XML Simulator"
 MARKERS         = gpslogimg.ICONS.keys(); MARKERS.sort(); MARKERS = (MARKERS[2:]+[MARKERS[1]])[:6]
 
-IMG_FONT        = "normal" #"title" # "dense"
+IMG_FONT        = (not IN_EMU and "normal") or "dense" #"title" # "dense"
 
-#DEBUG = True
-#DEBUG = False
-DEBUG = e32.in_emulator() or __name__ == 'editor'
+PERF_CTRS       = 30
 
+
+if not cputime: PERF_CTRS = 0
 
 singleton = None
+
+def isdaylight(): # :-)
+  time.strftime("%H") >= MORNING and time.strftime("%H") <= EVENING
 
 def globalCallback(gps): # the dreaded CONE 8!
   if singleton:
     return singleton.gpsCallback(gps)
 
+
+if not hasattr(__builtins__, "sum"):
+  def sum(seq):
+    s = 0
+    for e in seq: s += e
+    return s
 
 class GpsLog(object):
 
@@ -96,12 +121,25 @@ class GpsLog(object):
     self.nearest = None
     self.gpssema = None
     self.busy    = 0
-
+    self.perf    = None
+    self.thperf  = 0.0
+    
+    self.nightmenu = None
+    
     del dummy
 
     self.initializeSettings()
 
     self.applySettings()
+    
+    if isdaylight():
+      self.colorMode("day")
+    else:
+      self.colorMode("night")
+
+    if not self.cpugraph:
+      global PERF_CTRS
+      PERF_CTRS = 0
     
     self.settings.satupd = -5
     
@@ -125,20 +163,29 @@ class GpsLog(object):
         if not self.autostart:  self.view.bind(EKeyYes, self.start)
         else:                   self.view.bind(EKeyYes, self.stop)
 
-      if self.lmsettings.uselm: lmmenu = [ (u"Landmark Settings", self.editLandmarkSettings) ]
-      else:                     lmmenu = []
+      if self.lmsettings.uselm:
+        lmmenu = [ (u"Landmark Settings", self.editLandmarkSettings) ]
+        lmdisp = ( (u"Landmarks", lambda: self.cycleMode(set=DISP_LANDMARK) ), )
+      else:
+        lmmenu  = []
+        lmmdisp = ()
 
-      appuifw.app.menu = [
+      appuifw.app.menu =  [
         (u"Start",         self.start),
         (u"Pause",         self.togglePause),
-        (u"Display Mode",  self.cycleMode),
+        (u"Display Mode",  ( ( u"Overview",   lambda: self.cycleMode(set=DISP_NORM)),
+                             ( u"Satellites", lambda: self.cycleMode(set=DISP_SATGRAPH)),
+                             ( u"Compass",    lambda: self.cycleMode(set=DISP_NORM))
+                           ) + lmdisp + (
+                             ( u"Toggle Night Mode", self.colorMode),
+                             ( u"Toggle Fullscreen", self.screenMode),
+                           ) ),
       ] + lmmenu + [
         (u"Settings",      self.editSettings),
         (u"Exit",          self.close),
       ]
       
-
-      # appuifw.app.screen = 'large'
+      appuifw.app.screen = str(self.settings.screen)
 
       appuifw.app.focus            = self.handleFocus
       appuifw.app.exit_key_handler = self.close
@@ -190,6 +237,8 @@ class GpsLog(object):
      bind(EKeyDownArrow,       lambda: self.cycleTravel(forward=False))
      bind(EKey0,               self.markWaypoint)
      bind(EKeyStar,            self.markOut)
+     bind(EKeyHash,            self.colorMode)
+     bind(EKey2,               self.screenMode)
      appuifw.app._self = self
      for key in range(EKey4, EKey9+1):
        bind(key, eval("lambda: appuifw.app._self.markIn(%d)" % (key-EKey0-4)))
@@ -199,6 +248,52 @@ class GpsLog(object):
   def handleFocus(self, focus):
     self.focus = focus
     
+  ############################################################################
+  def cpuGraph(self, img):
+    if self.log == None or cputime == None or not self.cpugraph:
+      return
+    try:    cpu, tm = cputime(), time.clock() # may raise errors on some devices!
+    except: return
+    if self.perf == None:
+      self.perf = [ (0, 0, 0.0, 0.0) ] * (PERF_CTRS) # + [(cpu, tm, 100.0, 5.0)]
+      return
+    used, passed = cpu - self.perf[-1][0] + self.thperf, tm - self.perf[-1][1]
+    self.thperf = 0.0
+    if passed > 0: used = used / passed
+    else:          used = 0.0
+    useavg = PERF_CTRS/4
+    avg = (used + sum([p[2] for p in self.perf[-useavg:-1]])) / useavg
+    
+    self.perf = (self.perf + [(cpu, tm, used, avg)])[-PERF_CTRS:]
+    if img == None: return
+
+    # count this function too
+    # w, h, x, xs, my, col = img.size + (0, img.size[0]-53-PERF_CTRS, 20, 0x007f00)
+    x, my, col = 0, 20, 0x009f00
+    
+    pimg = graphics.Image.new((PERF_CTRS+2, my+2))
+    mask = graphics.Image.new((PERF_CTRS+2, my+2), "L")
+    pimg.rectangle((0,0,PERF_CTRS+2,my), self.fg, fill=self.bg)
+    mask.clear(0xc0c0c0)
+    
+    for cpu, tm, used, avg in self.perf:
+      # make 90% look like full load
+      y  = my-min(my*int(1000.0*used)/900+1,my)-2
+      pimg.line((x+1,my-2,x+1,y), col)
+      y  = my-min(my*int(1000.0*avg)/900+1,my)-2
+      if avg > 1: pimg.point((x+1,y), 0x0000ff)
+      x += 1
+
+    # gpslogimg.alphaText(pimg, (1,1), u"%2.f%%" % (self.perf[-1][3]*100.0),
+    #                     fill=self.fg, font=IMG_FONT, alpha=self.txtalpha)
+    gpslogimg.alphaText(pimg, (1,2), u"%2.f%%" % (self.perf[-1][3]*100.0),
+              fill=self.fg, font=IMG_FONT, alpha=0xd0d0d0)
+
+    w, h = img.size
+    img.blit(pimg, target=(w-PERF_CTRS-53, h-my), mask=mask)
+    
+    del pimg, mask
+
   ############################################################################
   def drawMarkers(self, img):
     w, h = img.size
@@ -226,11 +321,11 @@ class GpsLog(object):
         except: cat = None
         if cat in gpslogimg.ICONS: ico = gpslogimg.ICONS[cat]
         else:                      ico = gpslogimg.ICONS["Default"]
-        ico.draw(img, pos=(x,h-84), alpha=0xcfcfcf)
+        ico.draw(img, pos=(x,h-84), alpha=0xc0c0c0)
         caption = nearest.name
         if cat and caption.startswith(cat): caption = caption[len(cat):].strip(" -")
         gpslogimg.alphaText(img, (2, h-60), caption, 
-                            fill=0x0, alpha=0x7f7f7f, font=IMG_FONT)
+                            fill=self.fg, alpha=self.txtalpha, font=IMG_FONT)
         e32.ao_yield()
         self.fmarker = cat
       else:
@@ -246,13 +341,14 @@ class GpsLog(object):
 
     global line
 
-    font  = self.font
-    bold  = font[:2] + ( font[2] | graphics.FONT_BOLD, )
-    large = (font[0], font[1] * 5 / 3, font[2] | graphics.FONT_BOLD)
-    small = (font[0], font[1] * 3 / 4, font[2])
-    smit  = (font[0], font[1] * 3 / 4, font[2] | graphics.FONT_ITALIC)
-
-    gps = self.gps
+    font   = self.font
+    bold   = font[:2] + ( font[2] | graphics.FONT_BOLD, )
+    large  = (font[0], font[1] * 5 / 3, font[2] | graphics.FONT_BOLD)
+    small  = (font[0], font[1] * 3 / 4, font[2])
+    smit   = (font[0], font[1] * 3 / 4, font[2] | graphics.FONT_ITALIC)
+    fg, bg = self.fg, self.bg
+    
+    gps    = self.gps
 
     #------------------------------------------------------------------------
     if self.busy > 0: # TODO: warn or beep or ...
@@ -262,13 +358,17 @@ class GpsLog(object):
     #------------------------------------------------------------------------
     if self.dispmode() == DISP_OFF and self.gps != None and gps.dataAvailable():
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
+        self.settings.satupd = abs(self.settings.satupd)
         self.prevsat = gps.time
-        self.view.clear(0);
-        self.view.text((2, 20), u"Display is off", fill=0xafafaf, font=bold)
+        fg, bg, m = DISP_COLORS["night"]
+        self.view.clear(bg);
+        if self.colmode != "night": 
+          self.view.text((2, 20), u"Display is off", fill=fg, font=bold)
+        self.cpuGraph(None)
       return
 
     # some helpers
-    def prnt(x, y, text, font=font, fill=0):
+    def prnt(x, y, text, font=font, fill=fg):
       text = unicode(text)
       # msr = self.view.measure_text(u"MM", font)[0]
       # dy = msr[3]-msr[1]
@@ -277,15 +377,20 @@ class GpsLog(object):
       
     if not hasattr(self.view, "drawNow"): # i.e. GLCanvas
       img = graphics.Image.new(self.view.size)
+      img.clear(bg)
       blit = lambda i: self.view.blit(i)
     else:
       img = self.view
       blit = lambda i: 0
-      self.view.clear(0xffffff)
+      self.view.clear(bg)
 
     w, h = img.size
     r = float(min(w, h) / 2.0 * 72.0 / 100.0)
     cx = w/2; cy = h/2 - 20
+
+    def clearBottom():
+      self.view.rectangle(((2,h-10),(w-54-PERF_CTRS,h)), bg, fill=bg)
+      self.view.rectangle(((w-51,h-20),(w,h)), bg, fill=bg)
 
     if gps != None and gps.dataAvailable():
       loctime = gps.localtime
@@ -296,6 +401,9 @@ class GpsLog(object):
     
     #------------------------------------------------------------------------
     self.drawMarkers(img)
+
+    #------------------------------------------------------------------------
+    self.cpuGraph(img)
 
     #------------------------------------------------------------------------
     if gps == None or not gps.dataAvailable():
@@ -356,7 +464,7 @@ class GpsLog(object):
     #------------------------------------------------------------------------
     elif self.dispmode() == DISP_COMPASS:
 
-      img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), 0x000000, width=2)
+      img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), fg, width=2)
       
       if gps.hdg != None:
         a  = math.radians(gps.hdg)
@@ -368,7 +476,7 @@ class GpsLog(object):
         # img.polygon(((cx+x, cy-y),(cx+x1,cy-y1),(cx+xa,cy-ya),(cx+x2,cy-y2)), 0x000000, fill=0)
         img.polygon(((cx+x, cy-y),(cx+x1,cy-y1),(cx+xa,cy-ya)), 0x007f00, fill=0x007f00)
         img.polygon(((cx+x, cy-y),(cx+xa,cy-ya),(cx+x2,cy-y2)), 0xbf0000, fill=0xbf0000)
-        img.line(((cx+x, cy-y),(cx+xa,cy-ya)), 0xffffff)
+        img.line(((cx+x, cy-y),(cx+xa,cy-ya)), bg)
         
       blit(img)
       
@@ -388,7 +496,7 @@ class GpsLog(object):
       else: mark = 4269
 
       if gps.speed != None:
-        fill = 0
+        fill = fg
         if gps.speed > low:   fill = 0x7f4f00
         if gps.speed > norm:  fill = 0xbf0000
         if gps.speed > high:  fill = 0xff0000
@@ -412,9 +520,9 @@ class GpsLog(object):
 
         self.settings.satupd = abs(self.settings.satupd)
 
-        img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), 0x000000, width=2)
-        img.line(((cx+r, cy),(cx-r,cy)), 0x000000)
-        img.line(((cx, cy-r),(cx,cy+r)), 0x000000)
+        img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), fg, width=2)
+        img.line(((cx+r, cy),(cx-r,cy)), fg)
+        img.line(((cx, cy-r),(cx,cy+r)), fg)
       
         msr = self.view.measure_text(u"88", small)[0]
         dx, dy = msr[2], msr[3]-msr[1]
@@ -434,9 +542,9 @@ class GpsLog(object):
             if   sat.used:        fill = 0x007f00
             elif sat.signal > 20: fill = 0x7f7f00
             else:                 fill = 0x7f0000
-            img.rectangle(((2+i*(dx+3), h-dy-12-sat.signal/3),(2+(i+1)*(dx+3)-2, h-dy-12)), 0x000000, fill=fill)
+            img.rectangle(((2+i*(dx+3), h-dy-12-sat.signal/3),(2+(i+1)*(dx+3)-2, h-dy-12)), fg, fill=fill)
             x, y = satpos(sat)
-            img.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), 0x0, fill=0) #xffffff)
+            img.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), self.colmap["satmark"], fill=self.colmap["satmark"]) #xffffff)
             i += 1
         
         blit(img)
@@ -451,7 +559,7 @@ class GpsLog(object):
             x, y = satpos(sat)
             prnt(cx+x-dx/2,cy-y+dy/2, "%02d" % sat.prn, small, fill=(sat.used and 0x00ff00) or 0xff0000)
             prnt(2+i*(dx+3),h-10, "%02d" % sat.prn, small, fill=(sat.used and 0x007f00) or 0xbf0000)
-            prnt(2+i*(dx+3),h-8-2*dy-sat.signal/3, "%02d" % max(sat.signal,0), smit, fill=0)
+            prnt(2+i*(dx+3),h-8-2*dy-sat.signal/3, "%02d" % max(sat.signal,0), smit, fill=fg)
             i += 1
             
         else:
@@ -481,8 +589,9 @@ class GpsLog(object):
           prnt(w-65, 30, u"Spd.: %-2.1fkm/h" % gps.speed, small)
 
       else: # just clear the name and time area
-        self.view.rectangle(((2,h-10),(w-52,h)), 0xffffff, fill=0xffffff)
-        self.view.rectangle(((w-52,h-20),(w,h)), 0xffffff, fill=0xffffff)
+        clearBottom()
+        self.view.blit(img, source=(w-PERF_CTRS-55, h-22, w-55, h),
+                            target=(w-PERF_CTRS-55, h-22))
 
     #----------------------------------------------------------------------
     elif self.dispmode() == DISP_LANDMARK and self.lmsettings.uselm:
@@ -535,31 +644,38 @@ class GpsLog(object):
         except:
           if DEBUG: raise
           self.nearest = []
+        if cputime: self.thperf += cputime()
         
-      if self.nearest == None:
-        # thread.start_new_thread(e32.ao_callgate(searchThread), () )
-        thread.start_new_thread(searchThread, () )
-        e32.ao_yield()
+      if self.gps.lat != None and self.gps.lon != None: # may have become invalid
+        if self.nearest == None:
+          # thread.start_new_thread(e32.ao_callgate(searchThread), () )
+          thread.start_new_thread(searchThread, () )
+          # searchThread()
+          e32.ao_yield()
 
-      if self.nearest != None:
-        saveline = line
+        if self.nearest != None:
+          saveline = line
 
-        for lm in self.nearest:
-          icon(lm, img)
-          if line + hl > h:
-            break
+          for lm in self.nearest:
+            icon(lm, img)
+            if line + hl > h:
+              break
         
-        line = saveline
+          line = saveline
+          blit(img)
+
+          for lm in self.nearest:
+            show(lm)
+            if line + hl > h:
+              break
+        else: # just clear the screen and redraw the name and time area
+          clearBottom()
+          self.view.blit(img, source=(w-PERF_CTRS-55, h-22, w-55, h),
+                              target=(w-PERF_CTRS-55, h-22))
+
+      else:
         blit(img)
-
-        for lm in self.nearest:
-          show(lm)
-          if line + hl > h:
-            break
-      else: # just clear the screen and redraw the name and time area
-        self.view.rectangle(((2,h-10),(w-52,h)), 0xffffff, fill=0xffffff)
-        self.view.rectangle(((w-52,h-20),(w,h)), 0xffffff, fill=0xffffff)
-
+              
       self.nearest = None
 
       
@@ -768,11 +884,15 @@ class GpsLog(object):
     self.settings.trvlmodes = unicode(`self.trvlmodes`)
       
   ############################################################################
-  def cycleMode(self, forward=True):
+  def cycleMode(self, forward=True, set=None):
     if not self.gps:
       return
 
-    if forward:
+    if set != None:
+      if set == self.dispmode(): return
+      pos = [m[0] for m in self.dispmodes].index(set)
+      self.dispmodes[:] = self.dispmodes[pos:] + self.dispmodes[:pos]
+    elif forward:
       prev = self.dispmodes[0]
       self.dispmodes[:] = self.dispmodes[1:] + [ prev ]
     else:
@@ -783,6 +903,28 @@ class GpsLog(object):
       self.cycleMode(forward)
 
     self.settings.dispmodes = unicode(`self.dispmodes`)
+    self.display(immediately=True)
+
+  ############################################################################
+  def colorMode(self, mode=None):
+    if mode == None:
+      if self.colmode == "day": self.colmode = "night"
+      else:                     self.colmode = "day"
+    else:
+      self.colmode = mode
+    self.fg, self.bg, self.colmap = DISP_COLORS[self.colmode]
+    # frequently used
+    self.txtalpha = self.colmap["txtalpha"]
+    
+    if mode == None:
+      self.display(immediately=True)
+
+  ############################################################################
+  def screenMode(self, set=None):
+    if set:                              mode = set
+    elif appuifw.app.screen == "normal": mode = "full"
+    else:                                mode = "normal"
+    appuifw.app.screen = self.settings.screen = mode
     self.display(immediately=True)
 
   ############################################################################
@@ -901,7 +1043,7 @@ class GpsLog(object):
           return
       elif self.settings.btdevice == XMLSIM_GPS:
         if XMLSimulator != None:
-          self.gps = XMLSimulator(sources=os.path.join(self.settings.logdir,"sim","*.gpx"))
+          self.gps = XMLSimulator(sources=[os.path.join(self.settings.logdir,"sim","*.gpx"),os.path.join(self.settings.logdir,"sim","*.kml")])
         else:
           appuifw.note(u"XMLSimulator module not installed! Please see the README.", "error")
           return
@@ -970,8 +1112,10 @@ class GpsLog(object):
   ############################################################################
   def initializeSettings(self, msg="Please check your settings"):
     
-    SETTINGS_VER = 5
-
+    SETTINGS_VER = 6
+    self.ON_OFF_SETT = ["backlight","autostart","extended","satellites","cpugraph"]
+    cpuhide          = (cputime == None)
+    
     DEFDESC = [
       (("backlight", "Keep Backlight On"), "combo",   [u"on", u"off"], u"off"),
       (("autostart", "Start automatically"), "combo",   [u"on", u"off"], u"off"),
@@ -983,10 +1127,12 @@ class GpsLog(object):
       (("extended",  "Extended Data Format"), "combo",   [u"on", u"off"], u"on"),
       (("satellites","Log Satellites (GPX extended only)"), "combo",   [u"on", u"off"], u"on"),
       (("btdevice",  "Choose New Bluetooth Device"), "combo",   [u"on", u"off"], u"on"),
+      (("cpugraph",  "Show CPU Usage", cpuhide), "combo",   [u"on", u"off"], u"on"),
       (("resetdflt", "Reset to default settings and exit"), "combo",   [u"Yes", u"No!"], u"No!"),
       (("btaddr",    "Bluetooth Address", True), "text",     [], "None"),
       (("dispmodes", "Display Mode", True), "text",   [], unicode(`DISPMODES`)),
       (("trvlmodes", "Travel Mode", True), "text",   [], unicode(`TRAVELMODES`)),
+      (("screen",    "Screen Mode", True), "text",   [], u"normal"),
       (("haspos",    "Positioning avail.", True), "number",   [], 0),
       (("hasloc",    "LocationRequestor avail.", True), "number",   [], 0),
       (("hassim",    "Simulator avail.", True), "number",   [], 0),
@@ -1044,10 +1190,16 @@ class GpsLog(object):
 
   ############################################################################
   def applySettings(self):
-    self.extended  = (self.settings.extended == "on")
-    self.autostart = (self.settings.autostart == "on")
-    self.satellites= (self.settings.satellites== "on")
-    self.backlight = (self.settings.backlight == "on")
+    
+    for sett in self.ON_OFF_SETT:
+      setattr(self, sett, getattr(self.settings, sett) == "on")
+
+    if 0:
+      self.extended  = (self.settings.extended == "on")
+      self.autostart = (self.settings.autostart == "on")
+      self.satellites= (self.settings.satellites== "on")
+      self.backlight = (self.settings.backlight == "on")
+
     self.btaddr    = eval(self.settings.btaddr)
     self.dispmodes = eval(self.settings.dispmodes)
     self.trvlmodes = eval(self.settings.trvlmodes)
@@ -1083,7 +1235,7 @@ is out of reach.
     
       if self.settings.resetdflt == "Yes":
         self.settings.reset()
-        self.close()
+        self.close(force=True)
         return
     
       self.applySettings()
@@ -1106,7 +1258,11 @@ is out of reach.
       self.lmsettings.execute_dialog()
 
   ############################################################################
-  def close(self, save=True):
+  def close(self, force=False):
+    if self.log != None and not force:
+      if not appuifw.query(u"Logging still active. Really exit?", "query"):
+        return
+
     self.lck.signal()
 
   ############################################################################
