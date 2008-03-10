@@ -13,6 +13,14 @@ scaps   = caps + "+Location+SwEvent+ReadDeviceData+WriteDeviceData"
 
 SYMBIAN_UID=0xEDED0AF2
 
+references = [
+  (r"Z:\epoc32\winscw\c\python\gpslog\gpslog.py", r"src\gpslog.py"),
+  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpssim.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpssim.py"),
+  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpsloc.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsloc.py"),
+  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpsnmea.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsnmea.py"),
+  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpspos.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpspos.py"),
+]
+  
 setup_opts = {
   "caps":    caps,
   "scaps":   scaps,                     # signed caps
@@ -35,6 +43,12 @@ merges = [ r"E:\Develop\Python\Proj\S60\Carbide\modules\LocationRequestor\sis\Lo
            r"E:\Develop\Python\Proj\S60\Carbide\modules\Landmarks\sis\Landmarks_3rd.sisx" ]
 mergeu = [ m.replace(".sisx", "_unsigned.sis") for m in merges ]
 
+for src, dst in references:
+  rc = os.system('diff "%s" "%s" > nul:' % (src, dst))
+  if rc != 0:
+    rc = os.system('diff "%s" "%s"' % (src, dst))
+    print "WARNING: %s and %s differ" % (src, dst)
+  
 for src, dst in setup_opts["copy"]: os.chmod(dst, stat.S_IWRITE|stat.S_IREAD)
 
 sisfiles = setup(appname, srcdir, **setup_opts)
