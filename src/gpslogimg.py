@@ -76,9 +76,11 @@ def alphaText(drawable, coord, text, fill=0, font=None, alpha=None):
   timg = Image.new(sz); timg.clear(0xffffff)
   timg.text((0, y2-y1), text, fill=fill, font=font)
   if alpha == None:
-    mask = None
+    drawable.blit(timg, target=coord)
   else:
     mask = Image.new(sz, 'L'); mask.clear(0x0)
     mask.text((0, y2-y1), text, fill=alpha, font=font)
-  drawable.blit(timg, target=coord, mask=mask)
-    
+    drawable.blit(timg, target=coord, mask=mask)
+    del mask
+  del timg
+
