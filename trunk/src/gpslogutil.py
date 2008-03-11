@@ -120,9 +120,22 @@ def simpleMidpoint(p1, p2):
   lon3 = lon1 + atan2(By, cos(lat1) + Bx)
   return Rad2Deg(lat3), Rad2Deg(lon3)
   
+def simpleDestpoint((lat1, lon1), a, d):
+  """http://www.movable-type.co.uk/scripts/latlong.html"""
+  R = 6371000.0
+  lat1, lon1, a = [Deg2Rad(p) for p in [lat1, lon1, a]]
+  
+  lat2 = asin(sin(lat1)*cos(d/R) + 
+              cos(lat1)*sin(d/R)*cos(a))
+  lon2 = lon1 + atan2(sin(a)*sin(d/R)*cos(lat1), 
+                      cos(d/R)-sin(lat1)*sin(lat2))
 
-distance = earthDistance
-midpoint = simpleMidpoint
+  return (Rad2Deg(lat2), Rad2Deg(lon2))
+
+
+distance  = earthDistance
+midpoint  = simpleMidpoint
+destpoint = simpleMidpoint
 
 class Waypoint(list):
   FIELDS = [ "name", "lat", "lon", "alt", "time",
