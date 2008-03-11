@@ -18,6 +18,9 @@
  # [#SETTINGS SETTINGS]
   # [#General General]
   # [#Landmarks Landmarks]
+ # [#TROUBLESHOOTING TROUBLESHOOTING]
+  # [#Known_Problems Known Problems]
+  # [#FAQ FAQ#
  # [#SCREENSHOTS SCREENSHOTS]
  
 = ABOUT =
@@ -147,13 +150,20 @@ Information display is only active if logging is switched on.
 The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
 between the different modes.
  # Overview - Log File Name and General GPS
- # Satellite View
  # Compass and Speed
  # Landmarks
- # Power saving mode (logfile wrting only)
+ # Satellite View
+ # Power saving mode (logfile writing only)
+
+The `'2'` key switches the application in full screen mode. This especially
+usefull in night mode.
+
+Night mode and day mode can be toggled with the `'0'` key. Night mode will
+be automatically active the the application is started after 7pm or before
+5am (should be 9am, but nevermind ;-) )
 
 === Waypoints ===
-The `'0'` key inserts a waypoint into the log file. Currently, this is done
+The `'#'` key inserts a waypoint into the log file. Currently, this is done
 by inserting a named trackpoint into the GPX file. For !OziExplorer files,
 this doesn't have any effect in this version.
 
@@ -178,6 +188,14 @@ radius of half the distance.
 
 
 = SETTINGS =
+
+= TROUBLESHOOTING =
+== Known Problems ==
+ * When using an external Bluetooth GPS, logfiles are closed, if the Bluetooth connection is lost. The user may miss the error message.
+ * Landmark display eats *a lot* of CPU time and battery.
+ * _A lot_ of unhandled exceptions...
+
+== FAQ ==
 
 = SCREENSHOTS =
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
