@@ -6,6 +6,10 @@ import appuifw, e32
 
 e32._stdo(u"C:\\pygpslog.err.txt")
 
+try:   import      envy
+except:envy =      None
+
+
 localpath = str(os.path.split(appuifw.app.full_name())[0])
 sys.path  = [localpath] + sys.path
 
@@ -37,6 +41,10 @@ appuifw.app.exit_key_handler = close
 sys.stdout = MyStdout()
 sys.stderr = MyStderr()
 
+if envy != None:
+  try:    envy.set_app_system(True)
+  except: pass
+
 try:
   import gpslog
   gpslog.GpsLog().run(True)
@@ -54,3 +62,7 @@ else:
 lck.wait()
 appuifw.app.exit_key_handler = None
 appuifw.app.set_exit()
+
+if envy != None:
+  try:    envy.set_app_system(False)
+  except: pass
