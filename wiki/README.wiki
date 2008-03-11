@@ -20,7 +20,7 @@
   # [#Landmarks Landmarks]
  # [#TROUBLESHOOTING TROUBLESHOOTING]
   # [#Known_Problems Known Problems]
-  # [#FAQ FAQ#
+  # [#FAQ FAQ]
  # [#SCREENSHOTS SCREENSHOTS]
  
 = ABOUT =
@@ -193,7 +193,7 @@ radius of half the distance.
 == Known Problems ==
  * When using an external Bluetooth GPS, logfiles are closed, if the Bluetooth connection is lost. The user may miss the error message.
  * Landmark display eats *a lot* of CPU time and battery.
- * _A lot_ of unhandled exceptions...
+ * _A lot_ of unhandled exceptions... Most of them will only be visible on program close.
 
 == FAQ ==
 
