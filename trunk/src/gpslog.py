@@ -12,6 +12,7 @@ DEBUG  = IN_EMU or __name__ == 'editor' or os.path.exists(r"E:\python\gpslog.dbg
 import graphics
 from   key_codes   import *
 if     IN_EMU:     import gpslogutil; reload(gpslogutil)
+
 gpssplash.show("Initializing..")
 from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
                           coord, distance, midpoint, sorted, isoformat,\
@@ -48,19 +49,16 @@ EVENING      = "18"
 
 DEL_THRESHOLD   = 20
 DISP_NORM       = 0
-DISP_SATGRAPH   = 1
-DISP_COMPASS    = 2
-DISP_LANDMARK   = 3
-DISP_TMP        = 4
-DISP_OFF        = 5
+DISP_COMPASS    = 1
+DISP_LANDMARK   = 2
+DISP_SATGRAPH   = 3
+DISP_OFF        = 4
 DISP_SAT        = 99 # unused, will disappear
-DISPMODES       = [ (DISP_NORM, "GpsLog"),    (DISP_SATGRAPH, "Satellite View"),
-                    (DISP_COMPASS, "Compass"),(DISP_LANDMARK, "Landmarks"), 
-                    (DISP_OFF, "Powersave") ] #, (DISP_TMP, "Tmp")] # , (DISP_SAT, "Satellite Data")]
+DISPMODES       = [ "GpsLog", "Compass", "Landmarks", "Satellite View", "Powersave" ] #, (DISP_TMP, "Tmp")] # , (DISP_SAT, "Satellite Data")]
 DISP_COLORS     = {
                     "day":   (0x000000, 0xffffff,
                               { "txtalpha": 0x707070, "satmark": 0x000000 }),
-                    "night": (0xCF0000, 0x000000,
+                    "night": (0xc12000, 0x000000,
                               { "txtalpha": 0x808080, "satmark": 0x400000 }),
                   }
 TRAVELMODES     = [ ("City", 40, 50, 70), ("Overland", 100, 120, 140), ("Highway", 130, 160, 250) ]
@@ -174,9 +172,9 @@ class GpsLog(object):
         (u"Start",         self.start),
         (u"Pause",         self.togglePause),
         (u"Display Mode",  ( ( u"Overview",   lambda: self.cycleMode(set=DISP_NORM)),
-                             ( u"Satellites", lambda: self.cycleMode(set=DISP_SATGRAPH)),
                              ( u"Compass",    lambda: self.cycleMode(set=DISP_NORM))
                            ) + lmdisp + (
+                             ( u"Satellites", lambda: self.cycleMode(set=DISP_SATGRAPH)),
                              ( u"Toggle Night Mode", self.colorMode),
                              ( u"Toggle Fullscreen", self.screenMode),
                            ) ),
@@ -222,11 +220,14 @@ class GpsLog(object):
 
   ############################################################################
   def bindDefault(self, control):
-  
+     self.boundkeys = []
+
      def bind(keys, func):
        if type(keys) == str: keys = [ ord(k) for k in keys ]
        if type(keys) in [ int, long ]: keys = [ keys ]
-       for k in keys: control.bind(k, func)
+       for k in keys:
+         if not (k, control) in self.boundkeys: self.boundkeys.append((k, control))
+         control.bind(k, func)
 
      bind(EKeyRightArrow,      self.cycleMode)
      bind([EKey3, EKeySelect], self.cycleMode)
@@ -270,24 +271,21 @@ class GpsLog(object):
     # count this function too
     # w, h, x, xs, my, col = img.size + (0, img.size[0]-53-PERF_CTRS, 20, 0x007f00)
     x, my, col = 0, 20, 0x009f00
+    if self.busy > 0 or avg >= .25: col = 0xff0000
     
     pimg = graphics.Image.new((PERF_CTRS+2, my+2))
     mask = graphics.Image.new((PERF_CTRS+2, my+2), "L")
     pimg.rectangle((0,0,PERF_CTRS+2,my), self.fg, fill=self.bg)
     mask.clear(0xc0c0c0)
-    
-    for cpu, tm, used, avg in self.perf:
+
+    for cpu, tm, used, pavg in self.perf:
       # make 90% look like full load
       y  = my-min(my*int(1000.0*used)/900+1,my)-2
       pimg.line((x+1,my-2,x+1,y), col)
-      y  = my-min(my*int(1000.0*avg)/900+1,my)-2
-      if avg > 1: pimg.point((x+1,y), 0x0000ff)
       x += 1
 
-    # gpslogimg.alphaText(pimg, (1,1), u"%2.f%%" % (self.perf[-1][3]*100.0),
-    #                     fill=self.fg, font=IMG_FONT, alpha=self.txtalpha)
-    gpslogimg.alphaText(pimg, (1,2), u"%2.f%%" % (self.perf[-1][3]*100.0),
-              fill=self.fg, font=IMG_FONT, alpha=0xd0d0d0)
+    gpslogimg.alphaText(pimg, (1,2), u"%2.f%%" % (avg*100.0),
+                        fill=self.fg, font=IMG_FONT, alpha=0xd0d0d0)
 
     w, h = img.size
     img.blit(pimg, target=(w-PERF_CTRS-53, h-my), mask=mask)
@@ -350,13 +348,15 @@ class GpsLog(object):
     
     gps    = self.gps
 
+    dispmode = self.dispmode()
+    
     #------------------------------------------------------------------------
     if self.busy > 0: # TODO: warn or beep or ...
-      if DEBUG: print "Busy!", self.busy, "Mode:", self.dispmode()
+      if DEBUG: print "Busy!", self.busy, "Mode:", dispmode
       self.busy = 0
 
     #------------------------------------------------------------------------
-    if self.dispmode() == DISP_OFF and self.gps != None and gps.dataAvailable():
+    if dispmode == DISP_OFF and self.gps != None and gps.dataAvailable():
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
         self.settings.satupd = abs(self.settings.satupd)
         self.prevsat = gps.time
@@ -413,7 +413,7 @@ class GpsLog(object):
       else:            prnt(2, 20, u"Waiting for GPS...", large)
      
     #------------------------------------------------------------------------
-    elif self.dispmode() == DISP_NORM:
+    elif dispmode == DISP_NORM:
       blit(img)
       line = 0
       hl   = -self.view.measure_text(u"M", bold)[0][1] + 3
@@ -462,7 +462,7 @@ class GpsLog(object):
         show("Recorded", "%d/%.1fkm%s" % (nt, self.log.distance()/1000.0, rt))
 
     #------------------------------------------------------------------------
-    elif self.dispmode() == DISP_COMPASS:
+    elif dispmode == DISP_COMPASS:
 
       img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), fg, width=2)
       
@@ -513,7 +513,7 @@ class GpsLog(object):
       prnt(w - 75, 20, coord(gps.lat,"EW"), small)
   
     #------------------------------------------------------------------------
-    elif self.dispmode() == DISP_SATGRAPH:
+    elif dispmode == DISP_SATGRAPH:
 
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
         self.prevsat = gps.time
@@ -539,9 +539,9 @@ class GpsLog(object):
         if gps.sat: # draw the meter bars and mark circles
           i = 0
           for sat in gps.sat:
-            if   sat.used:        fill = 0x007f00
-            elif sat.signal > 20: fill = 0x7f7f00
-            else:                 fill = 0x7f0000
+            if   sat.used:        fill = 0x008000
+            elif sat.signal > 20: fill = 0xa06000
+            else:                 fill = 0x800000
             img.rectangle(((2+i*(dx+3), h-dy-12-sat.signal/3),(2+(i+1)*(dx+3)-2, h-dy-12)), fg, fill=fill)
             x, y = satpos(sat)
             img.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), self.colmap["satmark"], fill=self.colmap["satmark"]) #xffffff)
@@ -594,7 +594,7 @@ class GpsLog(object):
                             target=(w-PERF_CTRS-55, h-22))
 
     #----------------------------------------------------------------------
-    elif self.dispmode() == DISP_LANDMARK and self.lmsettings.uselm:
+    elif dispmode == DISP_LANDMARK and self.lmsettings.uselm:
       hl   = -self.view.measure_text(u"M", bold)[0][1] + 3
       line = hl
       ucol = w/4 - 2
@@ -772,15 +772,15 @@ class GpsLog(object):
 
   ############################################################################
   def dispmode(self):
-    return self.dispmodes[0][0]
+    return self.settings.dispmode
     
   ############################################################################
   def modetitle(self):
-    return self.dispmodes[0][1]
+    return DISPMODES[self.settings.dispmode]
 
   ############################################################################
   def travelmode(self): 
-    return self.trvlmodes[0]
+    return TRAVELMODES[self.settings.trvlmode]
 
   ############################################################################
   def togglePause(self):
@@ -872,37 +872,30 @@ class GpsLog(object):
     self.display()
 
   ############################################################################
-  def cycleTravel(self, forward=True):
+  def cycleTravel(self, forward=True, set=None):
     if self.dispmode() != DISP_COMPASS:
       return
-    if forward:
-      prev = self.trvlmodes[0]
-      self.trvlmodes[:] = self.trvlmodes[1:] + [ prev ]
-    else:
-      next = self.trvlmodes[-1]
-      self.trvlmodes[:] = [next] + self.trvlmodes[:-1]
-    self.settings.trvlmodes = unicode(`self.trvlmodes`)
-      
+    if set != None:
+      if set not in range(len(TRAVELMODES)): return
+    elif forward:   set = (self.settings.trvlmode+1) % len(TRAVELMODES)
+    else:           set = (self.settings.trvlmode-1) % len(TRAVELMODES)
+
+    self.settings.trvlmode = set
+
   ############################################################################
   def cycleMode(self, forward=True, set=None):
     if not self.gps:
       return
-
     if set != None:
-      if set == self.dispmode(): return
-      pos = [m[0] for m in self.dispmodes].index(set)
-      self.dispmodes[:] = self.dispmodes[pos:] + self.dispmodes[:pos]
-    elif forward:
-      prev = self.dispmodes[0]
-      self.dispmodes[:] = self.dispmodes[1:] + [ prev ]
-    else:
-      next = self.dispmodes[-1]
-      self.dispmodes[:] = [next] + self.dispmodes[:-1]
+      if set not in range(len(DISPMODES)): return
+    elif forward:   set = (self.settings.dispmode+1) % len(DISPMODES)
+    else:           set = (self.settings.dispmode-1) % len(DISPMODES)
 
-    if self.dispmodes[0][0] == DISP_LANDMARK and not self.lmsettings.uselm:
+    if self.settings.dispmode == DISP_LANDMARK and not self.lmsettings.uselm:
       self.cycleMode(forward)
+      
+    self.settings.dispmode = set
 
-    self.settings.dispmodes = unicode(`self.dispmodes`)
     self.display(immediately=True)
 
   ############################################################################
@@ -1110,9 +1103,9 @@ class GpsLog(object):
 
 
   ############################################################################
-  def initializeSettings(self, msg="Please check your settings"):
+  def initializeSettings(self, msg="New Version. Please check your settings"):
     
-    SETTINGS_VER = 6
+    SETTINGS_VER = 7
     self.ON_OFF_SETT = ["backlight","autostart","extended","satellites","cpugraph"]
     cpuhide          = (cputime == None)
     
@@ -1130,8 +1123,8 @@ class GpsLog(object):
       (("cpugraph",  "Show CPU Usage", cpuhide), "combo",   [u"on", u"off"], u"on"),
       (("resetdflt", "Reset to default settings and exit"), "combo",   [u"Yes", u"No!"], u"No!"),
       (("btaddr",    "Bluetooth Address", True), "text",     [], "None"),
-      (("dispmodes", "Display Mode", True), "text",   [], unicode(`DISPMODES`)),
-      (("trvlmodes", "Travel Mode", True), "text",   [], unicode(`TRAVELMODES`)),
+      (("dispmode",  "Display Mode", True), "number",   [], DISP_NORM),
+      (("trvlmode",  "Travel Mode", True), "number",   [], 0),
       (("screen",    "Screen Mode", True), "text",   [], u"normal"),
       (("haspos",    "Positioning avail.", True), "number",   [], 0),
       (("hasloc",    "LocationRequestor avail.", True), "number",   [], 0),
@@ -1178,13 +1171,8 @@ class GpsLog(object):
       appuifw.note(unicode(msg), "conf")
       self.editSettings()
 
-    dispmodes = eval(self.settings.dispmodes)
-    if sorted(dispmodes) != sorted(DISPMODES):
-      self.settings.dispmodes = unicode(`DISPMODES`)
-
-    trvlmodes = eval(self.settings.trvlmodes)
-    if sorted(trvlmodes) != sorted(TRAVELMODES):
-      self.settings.trvlmodes = unicode(`TRAVELMODES`)
+    if self.settings.dispmode > len(DISPMODES):   self.settings.dispmode = 0
+    if self.settings.trvlmode > len(TRAVELMODES): self.settings.travelmode = 0
 
     self.lmsettings = gpsloglm.LandmarkSettings()
 
@@ -1201,8 +1189,6 @@ class GpsLog(object):
       self.backlight = (self.settings.backlight == "on")
 
     self.btaddr    = eval(self.settings.btaddr)
-    self.dispmodes = eval(self.settings.dispmodes)
-    self.trvlmodes = eval(self.settings.trvlmodes)
     try:    self.altcorr = int(self.settings.altcorr)
     except: self.altcorr = 0; self.settings.altcorr = u"0"
   
@@ -1267,6 +1253,9 @@ is out of reach.
 
   ############################################################################
   def cleanup(self):
+    for k, ctl in self.boundkeys:
+      ctl.bind(k, None)
+    del self.boundkeys
     appuifw.app.screen = 'normal'
     appuifw.app.focus  = None
     appuifw.app.body   = self.appbody
