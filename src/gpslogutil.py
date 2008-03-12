@@ -5,9 +5,17 @@ if sys.platform.startswith("symbian"):
   import e32, e32dbm
   import settings
   SYMBIAN=True
+  IN_EMU = e32.in_emulator()
+  DEBUG  = IN_EMU or __name__ == 'editor' or os.path.exists(r"E:\python\gpslog.dbg")
 else:
-  SYMBIAN=False
+  SYMBIAN= False
+  IN_EMU = False
+  DEBUG  = True
 from IndentedXMLWriter import XMLWriter
+
+#DEBUG = True
+#DEBUG = False
+
 
 FIXTYPES        = ["none","2D","3D","dgps"]
 
