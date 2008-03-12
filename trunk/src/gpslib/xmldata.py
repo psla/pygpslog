@@ -50,10 +50,10 @@ class XMLData(object):
     "pdop":   "pdop",
     "satmap": {
       "record":    "extensions/{%s}sat"%GPSLOG_NS,
-      "prn":       "@prn",
+      "prn":       ("@prn", int),
       "azimuth":   "@az",
       "elevation": "@ele",
-      "signal":    "@signal",
+      "signal":    ("@signal", int),
       "used":      ("@used", lambda u: u == "true"),
     },
     "time":    ("time", isoparse),
