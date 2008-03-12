@@ -2,7 +2,7 @@
 import gpssplash; reload(gpssplash);
 gpssplash.show("Initializing.")
 import os, time, traceback, math, thread
-import appuifw, e32
+import appuifw, e32, sysinfo
 
 import graphics
 from   key_codes   import *
@@ -14,12 +14,12 @@ gpssplash.show("Initializing..")
 from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
                           coord, distance, midpoint, sorted, isoformat,\
                           DEF_LOGDIR, FIXTYPES, DEBUG
-DEBUG = False
+# DEBUG = False
 gpssplash.show("Initializing...")
 import gpsloglm  
 if IN_EMU: reload(gpsloglm)
-try:    from e32jext import cputime
-except: cputime = None
+try:    from e32jext import cputime, battery_status, EPoweredByBattery
+except: cputime, battery_status = None, None
 
 gpssplash.show("Loading User Icons...")
 import gpslogimg
@@ -69,17 +69,29 @@ IMG_FONT        = (not IN_EMU and "normal") or "dense" #"title" # "dense"
 
 PERF_CTRS       = 30
 
+WATCHDOG_TIMEOUT= 60
+WATCHDOG_TICK   = 10
 
 if not cputime: PERF_CTRS = 0
+if IN_EMU:      WATCHDOG_TIMEOUT, WATCHDOG_TICK = 10, 5
 
 singleton = None
 
 def isdaylight(): # :-)
   return time.strftime("%H") >= MORNING and time.strftime("%H") <= EVENING
 
+def ischarging():
+  if IN_EMU:             return False
+  if not battery_status: return False
+  return battery_status() != EPoweredByBattery
+
 def globalCallback(gps): # the dreaded CONE 8!
   if singleton:
     return singleton.gpsCallback(gps)
+
+def globalWatchdog(): # the dreaded CONE 8!
+  if singleton:
+    return singleton.watchdog()
 
 
 if not hasattr(__builtins__, "sum"):
@@ -120,7 +132,9 @@ class GpsLog(object):
     self.busy    = 0
     self.perf    = None
     self.thperf  = 0.0
-    
+    self.lastgps = time.time()
+    self.wdtimer = None
+
     self.nightmenu = None
     
     del dummy
@@ -199,6 +213,9 @@ class GpsLog(object):
       global singleton
       singleton = self
 
+      self.wdtimer = e32.Ao_timer()
+      self.wdtimer.after(WATCHDOG_TICK, globalWatchdog)
+
       self.lck.wait()
 
       self.stop()
@@ -262,6 +279,19 @@ class GpsLog(object):
     self.focus = focus
     
   ############################################################################
+  def watchdog(self):
+    diff = time.time() - self.lastgps
+    if self.gps and self.gps.ok and diff >= WATCHDOG_TIMEOUT:
+      rc = appuifw.query(u"No signal from GPS for %d s. Stop logging?" % int(diff) , "query")
+      if rc:
+        self.stop()
+      self.lastgps = time.time()
+    if not self.gps or not self.gps.ok:
+      self.lastgps = time.time()
+    if diff >= WATCHDOG_TICK: self.display(immediately=True)
+    self.wdtimer.after(WATCHDOG_TICK, globalWatchdog)
+
+  ############################################################################
   def cpuGraph(self, img):
     if self.log == None or cputime == None or not self.cpugraph:
       return
@@ -304,6 +334,26 @@ class GpsLog(object):
     img.blit(pimg, target=(w-PERF_CTRS-53, h-my), mask=mask)
     
     del pimg, mask
+
+  ############################################################################
+  def batteryMeter(self, img):
+    if appuifw.app.screen != "full" or not self.battmeter:
+      return
+    w, h = img.size
+    wb, hb, fg, bg = 10, 27, self.fg, self.bg
+    x, y = w-5-wb, 31+hb
+    batt = min(sysinfo.battery(), 100) * (hb-4) / 100 + 1
+    chrg = ischarging()
+    if   IN_EMU: batt = (60-time.time() % 60) * (hb-4)  / 60
+    if   chrg:   batt = (   time.time() %  6) * (hb-4)  /  6 + 1
+    col = 0x009f00
+    if not chrg:
+      if batt < (hb-4) / 2: col = 0xa06000
+      if batt < (hb-4) / 4: col = 0xff0000
+    img.rectangle(((x,y-hb+2),(x+wb,y)), outline=fg, fill=bg)
+    img.rectangle(((x+wb/4,y-hb),(x+wb*3/4+1,y-hb+2)), outline=fg, fill=fg)
+    img.rectangle(((x+1,y-1-batt),(x+wb-1,y-1)), outline=col, fill=col)
+    for i in range(7): bar=y+2-hb+(i+1)*(hb-2)/8; img.line(((x+1,bar),(x+wb-1,bar)), fg)
 
   ############################################################################
   def drawMarkers(self, img):
@@ -426,6 +476,9 @@ class GpsLog(object):
 
     #------------------------------------------------------------------------
     self.cpuGraph(img)
+
+    #------------------------------------------------------------------------
+    self.batteryMeter(img)
 
     #------------------------------------------------------------------------
     if gps == None or not gps.dataAvailable():
@@ -975,6 +1028,8 @@ class GpsLog(object):
       self.busy += 1
       return
 
+    self.lastgps = time.time()
+
     self.gpssema = 1
 
     try:
@@ -1134,6 +1189,7 @@ class GpsLog(object):
     appuifw.app.menu[0] = (u"Stop", self.stop)
     if self.view != None: self.view.bind(EKeyYes, self.stop)
     if self.lbox != None: self.lbox.bind(EKeyYes, self.stop)
+    self.prevsat = 0; self.lastgps = time.time()
     self.display()
     
   ############################################################################
@@ -1158,7 +1214,8 @@ class GpsLog(object):
   def initializeSettings(self, msg="New Version. Please check your settings"):
     
     SETTINGS_VER = 7
-    self.ON_OFF_SETT = ["backlight","autostart","extended","satellites","cpugraph"]
+    self.ON_OFF_SETT = ["backlight","autostart","extended","satellites",
+                        "cpugraph", "battmeter"]
     cpuhide          = (cputime == None)
     
     DEFDESC = [
@@ -1173,6 +1230,7 @@ class GpsLog(object):
       (("satellites","Log Satellites (GPX extended only)"), "combo",   [u"on", u"off"], u"on"),
       (("btdevice",  "Choose New Bluetooth Device"), "combo",   [u"on", u"off"], u"on"),
       (("cpugraph",  "Show CPU Usage", cpuhide), "combo",   [u"on", u"off"], u"on"),
+      (("battmeter", "Show Battery Meter in Fullscreen"), "combo",   [u"on", u"off"], u"on"),
       (("resetdflt", "Reset to default settings and exit"), "combo",   [u"Yes", u"No!"], u"No!"),
       (("btaddr",    "Bluetooth Address", True), "text",     [], "None"),
       (("dispmode",  "Display Mode", True), "number",   [], DISP_NORM),
@@ -1237,12 +1295,6 @@ class GpsLog(object):
     
     for sett in self.ON_OFF_SETT:
       setattr(self, sett, getattr(self.settings, sett) == "on")
-
-    if 0:
-      self.extended  = (self.settings.extended == "on")
-      self.autostart = (self.settings.autostart == "on")
-      self.satellites= (self.settings.satellites== "on")
-      self.backlight = (self.settings.backlight == "on")
 
     self.btaddr    = eval(self.settings.btaddr)
     try:    self.altcorr = int(self.settings.altcorr)
@@ -1317,6 +1369,8 @@ is out of reach.
     appuifw.app.focus  = None
     appuifw.app.body   = self.appbody
     self.closeLog()
+    if self.wdtimer:
+      self.wdtimer.cancel(); del self.wdtimer; self.wdtimer = None
     if self.gps != None:
       self.gps.close(); del self.gps; self.gps = None
     if self.view != None:
@@ -1325,6 +1379,5 @@ is out of reach.
       del self.lbox; self.lbox = None
     if self.cbcg != None:
       del self.cbcg; self.cbcg = None
-
 if __name__ in ['__main__', 'editor']:
   GpsLog().run()
