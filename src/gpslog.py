@@ -14,6 +14,7 @@ gpssplash.show("Initializing..")
 from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
                           coord, distance, midpoint, sorted, isoformat,\
                           DEF_LOGDIR, FIXTYPES, DEBUG
+DEBUG = False
 gpssplash.show("Initializing...")
 import gpsloglm  
 if IN_EMU: reload(gpsloglm)
@@ -137,7 +138,7 @@ class GpsLog(object):
       global PERF_CTRS
       PERF_CTRS = 0
     
-    self.settings.satupd = -5
+    self.settings.satupd = -2
 
     if self.settings.btdevice == "on":
       self.btaddr = None
@@ -160,11 +161,16 @@ class GpsLog(object):
         else:                   self.view.bind(EKeyYes, self.stop)
 
       if self.lmsettings.uselm:
-        lmmenu = [ (u"Landmark Settings", self.editLandmarkSettings) ]
+        lmmenu = ( (u"Landmarks", self.editLandmarkSettings), )
         lmdisp = ( (u"Landmarks", lambda: self.cycleMode(set=DISP_LANDMARK) ), )
       else:
         lmmenu  = []
-        lmmdisp = ()
+        lmdisp  = ()
+
+      if lmmenu:
+        setmenu = (u"Settings",  ( ( u"General", self.editSettings),) + lmmenu )
+      else:
+        setmenu = (u"Settings", self.editSettings)
 
       appuifw.app.menu =  [
         (u"Start",         self.start),
@@ -176,8 +182,7 @@ class GpsLog(object):
                              ( u"Toggle Night Mode", self.colorMode),
                              ( u"Toggle Fullscreen", self.screenMode),
                            ) ),
-      ] + lmmenu + [
-        (u"Settings",      self.editSettings),
+        ] + [ setmenu ] + [
         (u"Exit",          self.close),
       ]
       
@@ -339,6 +344,11 @@ class GpsLog(object):
     else:
       self.fmarker = None
 
+  def setRedraw(self, now=True):
+    s = (now and -1) or 1
+    self.settings.satupd = s*abs(self.settings.satupd)
+    self.lmsettings.upd  = s*abs(self.lmsettings.upd)
+    
   ############################################################################  
   def drawGraph(self, rect=None):
 
@@ -346,6 +356,9 @@ class GpsLog(object):
       return
 
     global line
+
+    if rect != None:
+      self.setRedraw()
 
     font   = self.font
     bold   = font[:2] + ( font[2] | graphics.FONT_BOLD, )
@@ -366,7 +379,7 @@ class GpsLog(object):
     #------------------------------------------------------------------------
     if dispmode == DISP_OFF and gps != None and gps.dataAvailable():
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
-        self.settings.satupd = abs(self.settings.satupd)
+        self.setRedraw(False)
         self.prevsat = gps.time
         fg, bg, m = DISP_COLORS["night"]
         self.view.clear(bg);
@@ -702,6 +715,8 @@ class GpsLog(object):
     if img != self.view:
       del img
 
+    self.setRedraw(False)
+
   ############################################################################
   def showLandmarks(self):
 
@@ -774,10 +789,7 @@ class GpsLog(object):
   ############################################################################
   def display(self, immediately=False):
   
-    if immediately  and self.dispmode() in [DISP_SATGRAPH, DISP_OFF]:
-      self.settings.satupd = -abs(self.settings.satupd)
-    if immediately  and self.dispmode() == DISP_LANDMARK:
-      self.lmsettings.upd = -abs(self.lmsettings.upd)
+    self.setRedraw(immediately)
 
     appuifw.app.title = unicode(self.modetitle())
 
@@ -893,6 +905,9 @@ class GpsLog(object):
   ############################################################################
   def markWaypoint(self):
     if not self.gps or not self.log:
+      return
+    if not self.gps.dataAvailable() or self.gps.position == (None,None):
+      appuifw.note(u"No GPS data at the moment.", "error")
       return
 
     wpt = self.log.waypoint(self.gps)
@@ -1022,6 +1037,10 @@ class GpsLog(object):
         if DEBUG: raise
         self.stop(display=False)
 
+        # The user might have missed the error message.
+        rc = appuifw.query(u"GPS acquisition terminated. Try to restart?", "query")
+        if rc:
+          self.start()
     finally:
       self.gpssema = 0
 
@@ -1204,10 +1223,14 @@ class GpsLog(object):
       appuifw.note(unicode(msg), "conf")
       self.editSettings()
 
-    if self.settings.dispmode > len(DISPMODES):   self.settings.dispmode = 0
+    if self.settings.dispmode > len(DISPMODES):   self.settings.dispmode   = 0
     if self.settings.trvlmode > len(TRAVELMODES): self.settings.travelmode = 0
 
     self.lmsettings = gpsloglm.LandmarkSettings()
+
+    # landmarks may have gone
+    if self.settings.dispmode == DISP_LANDMARK and not self.lmsettings.uselm:
+      self.settings.dispmode = 0
 
   ############################################################################
   def applySettings(self):

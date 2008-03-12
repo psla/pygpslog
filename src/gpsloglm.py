@@ -33,12 +33,49 @@ if landmarks != None:
   ]
   ICONS    = dict([ (n, id) for n, id in ICON_DEF ])
 
+  WPT_LM_ATTR = 0x003F & ~(landmarks.EDescription)
+                # landmarks.EAllAttributes &~... makes API panic (and app terminate)!
+  
+  waypointCache = {}
+
   def OpenDb(uri=LANDMARK_DB, create=False):
     if uri != None:
       raise NotImplementedError, "It doesn't make sense anyway. Use Categories!"
     else:
       return landmarks.OpenDefaultDatabase()
 
+  def ClearCache():
+    while waypointCache:
+      del waypointCache[waypointCache.keys()[0]]
+  
+  def ReadLm(db, id):
+    # no caching here: we crash on closing the cached lm's
+    return db.ReadLandmark(id)
+    
+  def ReadPartialLm(db, id, attr=WPT_LM_ATTR, fields=[]):
+    oattr, ofields = db.PartialReadParameters()
+    db.SetPartialReadParameters(attr, fields)
+    lm = db.ReadPartialLandmark(id)
+    db.SetPartialReadParameters(oattr, ofields)
+    return lm
+    
+  def ReadLmWpt(db, id):
+    if id in waypointCache:
+      return waypointCache[id]
+
+    lm = ReadPartialLm(db, id)
+    pos = lm.GetPosition()
+    rad = lm.GetCoverageRadius()
+    attr = { "categories": lm.GetCategories() }
+    if rad != None: attr["radius"] = rad
+    wpt = (gpslogutil.Waypoint([ lm.GetLandmarkName(), pos[0], pos[1], pos[2],
+                                 None, None, None, None, None, None, None,
+                                 pos[3], pos[4], attr ] ), lm.GetIcon())
+    lm.Close()
+    waypointCache[id] = wpt
+    return wpt
+
+      
   def CreateCat(name, icon=None):
     c   = landmarks.CreateLandmarkCategory()
     c.SetCategoryName(unicode(name))
@@ -74,15 +111,7 @@ if landmarks != None:
           id = it.Next()
           while id != landmarks.KPosLmNullItemId:
             if asWpt:
-              lm = sdb.ReadLandmark(id)
-              pos = lm.GetPosition()
-              rad = lm.GetCoverageRadius()
-              attr = { "categories": lm.GetCategories() }
-              if rad != None: attr["radius"] = rad
-              res += [ (gpslogutil.Waypoint([ lm.GetLandmarkName(), pos[0], pos[1], pos[2],
-                                              None, None, None, None, None, None, None,
-                                              pos[3], pos[4], attr ] ), lm.GetIcon()) ]
-              lm.Close()
+              res += [ ReadLmWpt(sdb, id) ]
             else:
               res += [id]
             id = it.Next()
@@ -115,7 +144,7 @@ if landmarks != None:
           RETRY = 10
           for i in range(RETRY):
             try:
-              lm = db.ReadLandmark(id)
+              lm = ReadLm(db, id)
               lm.SetIcon(*icon); db.UpdateLandmark(lm); lm.Close()
               done += [id]
               break
@@ -165,17 +194,23 @@ if landmarks != None:
     if lat == None or lon == None:
       return []
 
-    sc = []
     if cat != -1 and cat != None:
+      if type(cat) not in [list, tuple]: cat = [cat]
+    else: cat = []
+
+    sc = []
+    nrst = landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist))
+
+    if len(cat) != 0:
       # catc   = landmarks.CreateCategoryCriteria(cat, 0, "")
       # sc     = landmarks.CreateCompositeCriteria(landmarks.ECompositionAND,
       #           [ catc, near ])
       # catc.Close(); near.Close()
-      if type(cat) not in [list, tuple]: cat = [cat]
+      if len(cat) == 1: sc += [ nrst ]
       for c in cat:
         sc += [ landmarks.CreateCategoryCriteria(c, 0, "") ]
-
-    sc += [ landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist)) ]
+    if len(cat) > 1 or len(cat) == 0:
+      sc += [ nrst ]
     res  = SearchLm(sc, max=max, asWpt=True)
     for s in sc: s.Close()
     return res
@@ -194,12 +229,12 @@ if landmarks != None:
       desc = [
         (("uselm",   "Use Landmarks", True), "number",   [], 1),
         (("wptlm",   "Store Waypoints as Landmarks"), "combo",   [u"on", u"off"], u"on"),
+        (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("wptcat",  "Category for Waypoints"), "combo",  wptnames , u"(None)"),
+        (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
+        (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
         (("warncat", "Notify near Category"), "combo",  wptnames , u"(None)"),
         (("warnrad", "Distance for Notfication"), "number",  [] , 25),
-        (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
-        (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
-        (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
         (("upd",     "Update interval (s)"), "number",   [], 3),
         (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"off"),
         (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
@@ -283,6 +318,7 @@ if landmarks != None:
           appuifw.note(u"Landmark Editor failed (%d)" % rc, "error")
         else:
           appuifw.note(u"Please close and re-open Landmark settings", "conf")
+        ClearCache()
       except:
         appuifw.note(u"Cannot Start Landmark Editor", "error")
         if e32.in_emulator(): raise
@@ -459,4 +495,5 @@ else: # landmarks == None:
 
 def close():
   if landmarks:
+    ClearCache()
     landmarks.ReleaseLandmarkResources()
