@@ -1,5 +1,6 @@
 import os, sys, time
-from math import *
+import math
+from   math import *
 
 if sys.platform.startswith("symbian"):
   import e32, e32dbm
@@ -46,12 +47,18 @@ def sorted(itrbl):
   return ret
   
 
-def Deg2Rad(x):
-    "Degrees to radians."
-    return x * (pi/180.0)
-    
-def Rad2Deg(x):
-    return x * 180.0 / pi
+# there seems to be a problem with S60's math library: let's fix it
+if not hasattr(math, "radians"): 
+  def radians(x):
+      return x * pi / 180.0
+  math.radians = radians
+if not hasattr(math, "degrees"):
+  def degrees(x):
+      return x * 180.0 / pi
+  math.degrees = degrees
+
+Deg2Rad = radians
+Rad2Deg = degrees
 
 def CalcRad(lat):
     "Radius of curvature in meters at specified latitude."
