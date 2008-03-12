@@ -15,10 +15,10 @@ SYMBIAN_UID=0xEDED0AF2
 
 references = [
   (r"Z:\epoc32\winscw\c\python\gpslog\gpslog.py", r"src\gpslog.py"),
-  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpssim.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpssim.py"),
-  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpsloc.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsloc.py"),
-  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpsnmea.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsnmea.py"),
-  (r"Z:\epoc32\winscw\c\python\lib\gpslib\gpspos.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpspos.py"),
+  (r"Z:\epoc32\winscw\c\python\gpslog\gpslib\gpssim.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpssim.py"),
+  (r"Z:\epoc32\winscw\c\python\gpslog\gpslib\gpsloc.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsloc.py"),
+  (r"Z:\epoc32\winscw\c\python\gpslog\gpslib\gpsnmea.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpsnmea.py"),
+  (r"Z:\epoc32\winscw\c\python\gpslog\gpslib\gpspos.py", r"E:\Develop\Python\Proj\GPS\gpslib\gpspos.py"),
 ]
   
 setup_opts = {
