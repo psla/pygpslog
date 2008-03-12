@@ -83,9 +83,9 @@ e-mail automagically ;-)
  # Install to your device
  # Done!
  
- * Almost... I'd strongly recommend you to download, sign, and install those additional two modules:
+Almost... I'd strongly recommend you to download, sign, and install those additional two modules:
  * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page], and
- * [[http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site.
+ * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site.
  These two modules give you additional features like a CPU graph and more meaningful dialog menus.
 
 I know the signing process is tedious, but this application requires `Location`
