@@ -83,6 +83,11 @@ e-mail automagically ;-)
  # Install to your device
  # Done!
  
+ * Almost... I'd strongly recommend you to download, sign, and install those additional two modules:
+ * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page], and
+ * [[http://pygpslog.googlecode.com/files/ej32jext_unsigned.sis e32ject] from this site.
+ These two modules give you additional features like a CPU graph and more meaningful dialog menus.
+
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
 Symbian Signed seems to be in the process of changing their signing procedures.
@@ -107,9 +112,10 @@ the [#INSTALLATION installation process].
 === Location Requestor === 
 (Preferred method, uses 3rd Party Python module)
 ==== Pro's: ====
- * GPS can be shared with other applications
+ * GPS can be shared with other applications.
  * Very extensive data available.
- * Works with external or internal GPS devices
+ * Works with external or internal GPS devices.
+ * Continues to work, even if Bluetooth connection is lost.
 ==== Con's: ====
  * Requires the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
  * Must be Symbian signed
@@ -118,7 +124,7 @@ the [#INSTALLATION installation process].
 ==== Pro's: ====
  * Most extensive (and probably precise) data available.
  * Can be used without Symbian Signed.
- * No additional modules required
+ * No additional modules required.
 ==== Con's ===
  * Requires an external Bluetooth GPS.
  * GPS cannot be shared with Nokia Maps, Navigator, mgMaps or others.
@@ -126,12 +132,12 @@ the [#INSTALLATION installation process].
 === Nokia Positioning === 
 (uses standard Python module)
 ==== Pro's: ====
- * GPS can be shared with other applications
- * Works with external or internal GPS devices
- * No additional modules required
+ * GPS can be shared with other applications.
+ * Works with external or internal GPS devices.
+ * No additional modules required.
 ==== Con's: ====
- * Severely limited data (no satellite info, ...)
- * Must be Symbian signed
+ * Severely limited data (no satellite info, ...).
+ * Must be Symbian signed.
   
 = USAGE =
 
