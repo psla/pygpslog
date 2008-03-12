@@ -1,6 +1,6 @@
 try:    import landmarks
 except: landmarks = None
-import gpslogutil
+import  gpslogutil
 
 if landmarks != None:
   import os, e32, appuifw
@@ -96,7 +96,7 @@ if landmarks != None:
         sdb.Close()
     return res
 
-  def SetCatIcons(name):
+  def SetCatIcons(name): # This version gives us a KErrLocked
     db   = OpenDb()
     cm   = db.CreateCategoryManager()
     cid  = cm.GetCategory(unicode(name))
@@ -109,14 +109,22 @@ if landmarks != None:
         sc   = landmarks.CreateCategoryCriteria(cid, 0, "")
         ids  = SearchLm(sc, db=db)
         sc.Close()
+        done = [] # dupes possible, then db is locked (though lm is closed :-( )
         for id in ids:
-          lm = db.ReadLandmark(id)
-          lm.SetIcon(*icon)
-          db.UpdateLandmark(lm)
-          lm.Close()
+          if id in done: continue
+          RETRY = 10
+          for i in range(RETRY):
+            try:
+              lm = db.ReadLandmark(id)
+              lm.SetIcon(*icon); db.UpdateLandmark(lm); lm.Close()
+              done += [id]
+              break
+            except SymbianError, exc:
+              if exc[0] != -22 or i >= RETRY-1: raise # KErrLocked
+              e32.ao_sleep(0.2)
     cm.Close()
     db.Close()
-    
+
   def CreateLm(wpt, name=None, desc=None, cat=[], radius=None, edit=False):
     if not type(cat) in [list, tuple]:
       cat = [ cat ]
@@ -157,13 +165,17 @@ if landmarks != None:
     if lat == None or lon == None:
       return []
 
-    sc = [ landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist)) ]
-    if cat != -1:
+    sc = []
+    if cat != -1 and cat != None:
       # catc   = landmarks.CreateCategoryCriteria(cat, 0, "")
       # sc     = landmarks.CreateCompositeCriteria(landmarks.ECompositionAND,
       #           [ catc, near ])
       # catc.Close(); near.Close()
-      sc += [ landmarks.CreateCategoryCriteria(cat, 0, "") ]
+      if type(cat) not in [list, tuple]: cat = [cat]
+      for c in cat:
+        sc += [ landmarks.CreateCategoryCriteria(c, 0, "") ]
+
+    sc += [ landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist)) ]
     res  = SearchLm(sc, max=max, asWpt=True)
     for s in sc: s.Close()
     return res
@@ -188,8 +200,10 @@ if landmarks != None:
         (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("lmedit",  "Edit New Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
+        (("upd",     "Update interval (s)"), "number",   [], 3),
         (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"off"),
         (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
+        (("dispcat", "Display Categories", True), "text",   [], u"[]"),
       ]
       self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico" ]
     
@@ -212,6 +226,11 @@ if landmarks != None:
         self.warncat = self.categories[0][0]
       self.warncat = self.cat(self.warncat)[1]
 
+      self.dispcat = eval(self.dispcat)
+      # kill removed categories
+      if self.dispcat != None:
+        self.dispcat = [ c[1] for c in self.categories if c[1] in self.dispcat]
+
     ##########################################################################
     def __cnvt(self):
       for attr in self.ONOFFS:
@@ -230,6 +249,8 @@ if landmarks != None:
       except:
         self.warncat = self.categories[0]
       
+      self.dispcat = unicode(repr(self.dispcat))
+
     ##########################################################################
     def __loadCat(self):
       self.categories = [ ("(None)", landmarks.KPosLmNullGlobalCategory), # :-)) == 0
@@ -267,6 +288,52 @@ if landmarks != None:
         if e32.in_emulator(): raise
 
     ##########################################################################
+    def showcat(self):
+      # we're in execute_dialog i.e. we're in unicode world now!
+      # and, 'None' means all, '[]' means None ;-)
+      dispcat = eval(self.dispcat)
+      allcat    = self.categories[2:]
+      if dispcat != None:
+        choicecat = [ c for c in allcat if not c[1] in dispcat ]
+        choicecat.sort()
+        if len(choicecat) == 0: # something happened...
+          dispcat = None;  self.dispcat = "None"
+
+      if dispcat == None:
+        appuifw.note(u"All categories already displayed", "error")
+        return
+      
+      choices = [ unicode(c[0]) for c in choicecat ]
+      sel = appuifw.multi_selection_list(choices, style="checkbox", search_field=True)
+      if not sel: return # Cancel
+      
+      dispcat += [ choicecat[c][1] for c in sel ]
+      if len(dispcat) == len(allcat): dispcat = None
+      self.dispcat = str(repr(dispcat))
+
+    ##########################################################################
+    def hidecat(self):
+      # we're in execute_dialog i.e. we're in unicode world now!
+      dispcat = eval(self.dispcat)
+      if dispcat == []:
+        appuifw.note(u"No categories displayed", "error")
+        return
+      if dispcat == None:
+        dispcat = [ c[1] for c in self.categories[2:]]
+
+      choicecat = [ c for c in self.categories if c[1] in dispcat]
+      choicecat.sort()
+
+      choices = [ unicode(c[0]) for c in choicecat ]
+      sel = appuifw.multi_selection_list(choices, style="checkbox", search_field=True)
+      if not sel: return # Cancel
+
+      hidden = [ choicecat[c][1] for c in sel ]
+      rest = [ c for c in dispcat if not c in hidden ]
+      rest.sort()
+      self.dispcat = str(repr(rest))
+
+    ##########################################################################
     def addDefCat(self):
       try:
         for nm, icon in ICON_DEF[1:]:
@@ -287,7 +354,9 @@ if landmarks != None:
 
         menu = [
           (u"Landmark Editor", self.lmeditor),
-          (u"Add Default Categories", self.addDefCat),
+          (u"Add Display Categories", self.showcat),
+          (u"Remove Disp. Categories", self.hidecat),
+          (u"Set Icons/Categories", self.addDefCat),
         ]
 
         oldcat  = self.wptcat
