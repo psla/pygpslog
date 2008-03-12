@@ -108,7 +108,7 @@ class LocationRequestorProvider(gpslib.gpsbase.AbstractProvider):
     self.notifyCallbacks()
     
   def dataAvailable(self):
-    return len(self.data) != 0
+    return len(self.data) != 0 and self.data.time != None
     
   def modules():
     lr = locationrequestor.LocationRequestor()
