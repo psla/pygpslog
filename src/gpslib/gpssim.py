@@ -138,8 +138,11 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
   sattime  =  property(gettime) # see below
                                      
   def dataAvailable(self):
-    return self.data and self.data.rec != None
-    
+    try: # sometimes self.data gets lost ;-)
+      return self.data and self.data.rec != None
+    except: 
+      return False
+
   def process(self):
     upd = self.wait()
     if upd:
