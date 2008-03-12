@@ -4,19 +4,16 @@ gpssplash.show("Initializing.")
 import os, time, traceback, math, thread
 import appuifw, e32
 
-IN_EMU = e32.in_emulator()
-DEBUG  = IN_EMU or __name__ == 'editor' or os.path.exists(r"E:\python\gpslog.dbg")
-#DEBUG = True
-#DEBUG = False
-
 import graphics
 from   key_codes   import *
-if     IN_EMU:     import gpslogutil; reload(gpslogutil)
+
+IN_EMU = e32.in_emulator()
+if IN_EMU : import gpslogutil; reload(gpslogutil)
 
 gpssplash.show("Initializing..")
 from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
                           coord, distance, midpoint, sorted, isoformat,\
-                          DEF_LOGDIR, FIXTYPES
+                          DEF_LOGDIR, FIXTYPES, DEBUG
 gpssplash.show("Initializing...")
 import gpsloglm  
 if IN_EMU: reload(gpsloglm)
@@ -77,7 +74,7 @@ if not cputime: PERF_CTRS = 0
 singleton = None
 
 def isdaylight(): # :-)
-  time.strftime("%H") >= MORNING and time.strftime("%H") <= EVENING
+  return time.strftime("%H") >= MORNING and time.strftime("%H") <= EVENING
 
 def globalCallback(gps): # the dreaded CONE 8!
   if singleton:
@@ -109,6 +106,7 @@ class GpsLog(object):
     self.focus   = True
     self.font    = dummy.font
     self.prevsat = 0
+    self.prevlm  = 0
     self.stopping= False
     self.started = 0
     self.cbcg    = None
@@ -140,7 +138,7 @@ class GpsLog(object):
       PERF_CTRS = 0
     
     self.settings.satupd = -5
-    
+
     if self.settings.btdevice == "on":
       self.btaddr = None
       self.settings.btdevice = "off"
@@ -236,14 +234,23 @@ class GpsLog(object):
      bind(EKeyBackspace,       self.togglePause)
      bind(EKeyUpArrow,         self.cycleTravel)
      bind(EKeyDownArrow,       lambda: self.cycleTravel(forward=False))
-     bind(EKey0,               self.markWaypoint)
+     bind(EKeyHash,            self.markWaypoint)
      bind(EKeyStar,            self.markOut)
-     bind(EKeyHash,            self.colorMode)
+     bind(EKey0,               self.colorMode)
      bind(EKey2,               self.screenMode)
+     if DEBUG:
+       bind(EKeyEdit,          self.toggleConsole)
      appuifw.app._self = self
      for key in range(EKey4, EKey9+1):
        bind(key, eval("lambda: appuifw.app._self.markIn(%d)" % (key-EKey0-4)))
      
+
+  ############################################################################
+  def toggleConsole(self):
+    if appuifw.app.body != self.appbody:
+      appuifw.app.body = self.appbody
+    else:
+      appuifw.app.body = self.view
 
   ############################################################################
   def handleFocus(self, focus):
@@ -271,7 +278,8 @@ class GpsLog(object):
     # count this function too
     # w, h, x, xs, my, col = img.size + (0, img.size[0]-53-PERF_CTRS, 20, 0x007f00)
     x, my, col = 0, 20, 0x009f00
-    if self.busy > 0 or avg >= .25: col = 0xff0000
+    if avg >= .25:                 col = 0xa06000
+    if self.busy > 0 or avg >= .4: col = 0xff0000
     
     pimg = graphics.Image.new((PERF_CTRS+2, my+2))
     mask = graphics.Image.new((PERF_CTRS+2, my+2), "L")
@@ -356,7 +364,7 @@ class GpsLog(object):
       self.busy = 0
 
     #------------------------------------------------------------------------
-    if dispmode == DISP_OFF and self.gps != None and gps.dataAvailable():
+    if dispmode == DISP_OFF and gps != None and gps.dataAvailable():
       if (self.settings.satupd < 0) or (int(gps.time - self.prevsat) >= self.settings.satupd):
         self.settings.satupd = abs(self.settings.satupd)
         self.prevsat = gps.time
@@ -387,6 +395,7 @@ class GpsLog(object):
     w, h = img.size
     r = float(min(w, h) / 2.0 * 72.0 / 100.0)
     cx = w/2; cy = h/2 - 20
+    hl = -self.view.measure_text(u"M", bold)[0][1] + 3
 
     def clearBottom():
       self.view.rectangle(((2,h-10),(w-54-PERF_CTRS,h)), bg, fill=bg)
@@ -394,7 +403,7 @@ class GpsLog(object):
 
     if gps != None and gps.dataAvailable():
       loctime = gps.localtime
-      gpsname = self.gps.name
+      gpsname = gps.name
     else:
       loctime = time.localtime()
       gpsname = self.settings.btdevice
@@ -409,8 +418,8 @@ class GpsLog(object):
     if gps == None or not gps.dataAvailable():
 
       blit(img)
-      if not self.gps: prnt(2, 20, u"Logging not active", large)
-      else:            prnt(2, 20, u"Waiting for GPS...", large)
+      if not gps: prnt(2, 20, u"Logging not active", large)
+      else:       prnt(2, 20, u"Waiting for GPS...", large)
      
     #------------------------------------------------------------------------
     elif dispmode == DISP_NORM:
@@ -606,7 +615,7 @@ class GpsLog(object):
       def show(lm):
         global line
         wpt, svgicon = lm
-        d = wpt.distance(self.gps.position)
+        d = wpt.distance(gps.position)
         if d < 1000: d = "%7.f" % d; unit = "m"
         else:        d = "%7.1f" % (d / 1000); unit = "km"
 
@@ -638,20 +647,24 @@ class GpsLog(object):
       def searchThread():
         try:
           if self.nearest: return # probably still in use
-          nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
-                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0)
+          nearest = gpsloglm.NearestLm(gps.lat, gps.lon,
+                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0,
+                                       cat=self.lmsettings.dispcat)
           self.nearest = nearest
         except:
           if DEBUG: raise
           self.nearest = []
         if cputime: self.thperf += cputime()
         
-      if self.gps.lat != None and self.gps.lon != None: # may have become invalid
+      if gps.lat != None and gps.lon != None and self.lmsettings.dispcat != []: # may have become invalid
         if self.nearest == None:
-          # thread.start_new_thread(e32.ao_callgate(searchThread), () )
-          thread.start_new_thread(searchThread, () )
-          # searchThread()
-          e32.ao_yield()
+          if (self.lmsettings.upd < 0) or (int(gps.time - self.prevlm) >= self.lmsettings.upd):
+            self.prevlm  = gps.time
+            self.lmsettings.upd = abs(self.lmsettings.upd)
+            # thread.start_new_thread(e32.ao_callgate(searchThread), () )
+            thread.start_new_thread(searchThread, () )
+            # searchThread()
+            e32.ao_yield()
 
         if self.nearest != None:
           saveline = line
@@ -675,6 +688,9 @@ class GpsLog(object):
 
       else:
         blit(img)
+        
+        if self.lmsettings.dispcat == []:
+          prnt(2, hl, u"No Categories selected", bold)
               
       self.nearest = None
 
@@ -688,19 +704,30 @@ class GpsLog(object):
 
   ############################################################################
   def showLandmarks(self):
+
+    self.cpuGraph(None)
+
     if not self.lmsettings.uselm:
       return # temporarily disabled
       
-    if self.gps == None or not self.gps.dataAvailable():
+    gps = self.gps
+    
+    if gps == None or not gps.dataAvailable():
       if self.view != None:
         appuifw.app.body = self.view
       return self.drawGraph()
 
-    if not self.gps.lat or not self.gps.lon:
+    if not gps.lat or not gps.lon:
        return
 
+    if (self.lmsettings.upd > 0) and (int(gps.time - self.prevlm) < self.lmsettings.upd):
+      return
+      
+    self.prevlm  = gps.time
+    self.lmsettings.upd = abs(self.lmsettings.upd)
+
     try:
-      nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
+      nearest = gpsloglm.NearestLm(gps.lat, gps.lon,
                                    max=32, maxdist=self.lmsettings.radius*1000.0)
     except:
       if DEBUG: raise
@@ -712,7 +739,7 @@ class GpsLog(object):
     entries = []
 
     for wpt, ico in nearest:
-      d = wpt.distance(self.gps.position)
+      d = wpt.distance(gps.position)
       if d < 1000: d =u"%7.fm"%d
       else:        d =u"%7.1fkm" % (d / 1000); unit = "km"
       if not self.lmsettings.smico:
@@ -749,6 +776,8 @@ class GpsLog(object):
   
     if immediately  and self.dispmode() in [DISP_SATGRAPH, DISP_OFF]:
       self.settings.satupd = -abs(self.settings.satupd)
+    if immediately  and self.dispmode() == DISP_LANDMARK:
+      self.lmsettings.upd = -abs(self.lmsettings.upd)
 
     appuifw.app.title = unicode(self.modetitle())
 
@@ -788,7 +817,11 @@ class GpsLog(object):
       return
     mark = u""
     self.paused = not self.paused
-    if self.paused: mark = u" \u221a";
+    if self.paused:
+      mark = u" \u221a";
+      appuifw.app.screen = "normal"
+    else:
+      appuifw.app.screen = str(self.settings.screen)
 
     appuifw.app.menu[1] = (u"Pause" + mark, self.togglePause)
     self.display()
@@ -1254,7 +1287,8 @@ is out of reach.
   ############################################################################
   def cleanup(self):
     for k, ctl in self.boundkeys:
-      ctl.bind(k, None)
+      try:    ctl.bind(k, None)
+      except: pass
     del self.boundkeys
     appuifw.app.screen = 'normal'
     appuifw.app.focus  = None
