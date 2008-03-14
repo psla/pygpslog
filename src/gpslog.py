@@ -8,12 +8,11 @@ import graphics
 from   key_codes   import *
 
 IN_EMU = e32.in_emulator()
-if IN_EMU : import gpslogutil; reload(gpslogutil)
+if IN_EMU : import gpslogutil; reload(gpslogutil); del gpslogutil
 
 gpssplash.show("Initializing..")
-from   gpslogutil  import GpsLogSettings, OziLogfile, GpxLogfile,\
-                          coord, distance, midpoint, sorted, isoformat,\
-                          DEF_LOGDIR, FIXTYPES, DEBUG
+from   gpslogutil  import *
+
 # DEBUG = False
 gpssplash.show("Initializing...")
 import gpsloglm  
@@ -75,8 +74,7 @@ WATCHDOG_TICK   = 10
 if not cputime: PERF_CTRS = 0
 if IN_EMU:      WATCHDOG_TIMEOUT, WATCHDOG_TICK = 10, 5
 
-singleton = None
-
+##############################################################################
 def isdaylight(): # :-)
   return time.strftime("%H") >= MORNING and time.strftime("%H") <= EVENING
 
@@ -84,6 +82,16 @@ def ischarging():
   if IN_EMU:             return False
   if not battery_status: return False
   return battery_status() != EPoweredByBattery
+
+if not hasattr(__builtins__, "sum"):
+  def sum(seq):
+    s = 0
+    for e in seq: s += e
+    return s
+
+##############################################################################
+
+singleton = None
 
 def globalCallback(gps): # the dreaded CONE 8!
   if singleton:
@@ -93,12 +101,6 @@ def globalWatchdog(): # the dreaded CONE 8!
   if singleton:
     return singleton.watchdog()
 
-
-if not hasattr(__builtins__, "sum"):
-  def sum(seq):
-    s = 0
-    for e in seq: s += e
-    return s
 
 class GpsLog(object):
 
@@ -134,9 +136,9 @@ class GpsLog(object):
     self.thperf  = 0.0
     self.lastgps = time.time()
     self.wdtimer = None
+    self.dest    = None
+    self.gpson   = False
 
-    self.nightmenu = None
-    
     del dummy
 
     self.initializeSettings()
@@ -150,7 +152,7 @@ class GpsLog(object):
 
     if not self.cpugraph:
       global PERF_CTRS
-      PERF_CTRS = 0
+    #  PERF_CTRS = 0
     
     self.settings.satupd = -2
 
@@ -177,24 +179,31 @@ class GpsLog(object):
       if self.lmsettings.uselm:
         lmmenu = ( (u"Landmarks", self.editLandmarkSettings), )
         lmdisp = ( (u"Landmarks", lambda: self.cycleMode(set=DISP_LANDMARK) ), )
+        lmdest = ( (u"From Landmarks", lambda: self.selectDestination(landmark=True) ), )
       else:
-        lmmenu  = []
-        lmdisp  = ()
-
+        lmmenu  = lmdisp = lmdest  = ()
+        
       if lmmenu:
-        setmenu = (u"Settings",  ( ( u"General", self.editSettings),) + lmmenu )
+        setmenu  = (u"Settings",    ( ( u"General", self.editSettings),) + lmmenu )
       else:
-        setmenu = (u"Settings", self.editSettings)
+        setmenu  = (u"Settings", self.editSettings)
+
+      destmenu = ( (u"Enter Manually", self.selectDestination),
+                   (u"Clear",          lambda: self.selectDestination(clear=True) ) )
+
+      destmenu = (u"Destination", lmdest + destmenu)
 
       appuifw.app.menu =  [
         (u"Start",         self.start),
         (u"Pause",         self.togglePause),
+        ] + [ destmenu ] + [
         (u"Display Mode",  ( ( u"Overview",   lambda: self.cycleMode(set=DISP_NORM)),
                              ( u"Compass",    lambda: self.cycleMode(set=DISP_NORM))
                            ) + lmdisp + (
                              ( u"Satellites", lambda: self.cycleMode(set=DISP_SATGRAPH)),
                              ( u"Toggle Night Mode", self.colorMode),
                              ( u"Toggle Fullscreen", self.screenMode),
+                             ( u"Toggle Idle GPS",   self.toggleGps),
                            ) ),
         ] + [ setmenu ] + [
         (u"Exit",          self.close),
@@ -218,7 +227,7 @@ class GpsLog(object):
 
       self.lck.wait()
 
-      self.stop()
+      self.stop(closeGps=True)
 
       self.settings.save()
       self.lmsettings.save()
@@ -232,9 +241,7 @@ class GpsLog(object):
 
     finally:
       self.closeLog()
-      if self.gps:
-        self.gps.close()
-        del self.gps
+      self.stopGps()
       singleton = None
       gpsloglm.close()
 
@@ -250,7 +257,8 @@ class GpsLog(object):
          control.bind(k, func)
 
      bind(EKeyRightArrow,      self.cycleMode)
-     bind([EKey3, EKeySelect], self.cycleMode)
+     bind(EKey3,               self.cycleMode)
+     bind(EKeySelect,          self.toggleGps)
      bind(EKeyLeftArrow,       lambda: self.cycleMode(forward=False))
      bind([EKey1, ord(".")],   lambda: self.cycleMode(forward=False))
      bind(EKeyBackspace,       self.togglePause)
@@ -282,9 +290,9 @@ class GpsLog(object):
   def watchdog(self):
     diff = time.time() - self.lastgps
     if self.gps and self.gps.ok and diff >= WATCHDOG_TIMEOUT:
-      rc = appuifw.query(u"No signal from GPS for %d s. Stop logging?" % int(diff) , "query")
+      rc = appuifw.query(u"No signal from GPS for %d s. Stop GPS and logging?" % int(diff) , "query")
       if rc:
-        self.stop()
+        self.stop(closeGps=True)
       self.lastgps = time.time()
     if not self.gps or not self.gps.ok:
       self.lastgps = time.time()
@@ -293,47 +301,47 @@ class GpsLog(object):
 
   ############################################################################
   def cpuGraph(self, img):
-    if self.log == None or cputime == None or not self.cpugraph:
+    if cputime == None or not self.cpugraph:
       return
     try:    cpu, tm = cputime(), time.clock() # may raise errors on some devices!
     except: return
     if self.perf == None:
-      self.perf = [ (0, 0, 0.0, 0.0) ] * (PERF_CTRS) # + [(cpu, tm, 100.0, 5.0)]
+      self.perf = [ (0, 0, 0.0) ] * (PERF_CTRS) # + [(cpu, tm, 100.0, 5.0)]
       return
+
     used, passed = cpu - self.perf[-1][0] + self.thperf, tm - self.perf[-1][1]
     self.thperf = 0.0
     if passed > 0: used = used / passed
     else:          used = 0.0
     useavg = PERF_CTRS/4
-    avg = (used + sum([p[2] for p in self.perf[-useavg:-1]])) / useavg
     
-    self.perf = (self.perf + [(cpu, tm, used, avg)])[-PERF_CTRS:]
-    if img == None: return
+    # count this function
+    self.perf = (self.perf + [(cpu, tm, used)])[-PERF_CTRS:]
 
-    # count this function too
-    # w, h, x, xs, my, col = img.size + (0, img.size[0]-53-PERF_CTRS, 20, 0x007f00)
-    x, my, col = 0, 20, 0x009f00
-    if avg >= .25:                 col = 0xa06000
-    if self.busy > 0 or avg >= .4: col = 0xff0000
+    if img != None:
+      x, my, col = 0, 20, 0x009f00
+      if used >= .25:                 col = 0xa06000
+      if self.busy > 0 or used >= .4: col = 0xff0000
     
-    pimg = graphics.Image.new((PERF_CTRS+2, my+2))
-    mask = graphics.Image.new((PERF_CTRS+2, my+2), "L")
-    pimg.rectangle((0,0,PERF_CTRS+2,my), self.fg, fill=self.bg)
-    mask.clear(0xc0c0c0)
+      pimg = graphics.Image.new((PERF_CTRS+2, my+2))
+      mask = graphics.Image.new((PERF_CTRS+2, my+2), "L")
+      pimg.rectangle((0,0,PERF_CTRS+2,my), self.fg, fill=self.bg)
+      mask.clear(0xc0c0c0)
 
-    for cpu, tm, used, pavg in self.perf:
-      # make 90% look like full load
-      y  = my-min(my*int(1000.0*used)/900+1,my)-2
-      pimg.line((x+1,my-2,x+1,y), col)
-      x += 1
+      for cpu, tm, gused in self.perf:
+        # make 90% look like full load
+        y  = my-min(my*int(1000.0*gused)/900+1,my)-2
+        pimg.line((x+1,my-2,x+1,y), col)
+        x += 1
 
-    gpslogimg.alphaText(pimg, (1,2), u"%2.f%%" % (avg*100.0),
-                        fill=self.fg, font=IMG_FONT, alpha=0xd0d0d0)
+      gpslogimg.alphaText(pimg, (1,2), u"%2.f%%" % (used*100.0),
+                          fill=self.fg, font=IMG_FONT, alpha=self.txtalpha, back=self.bg)
+      # pimg.text((1,my-3), u"%2.f%%" % (avg*100.0), fill=self.fg, font=IMG_FONT)
 
-    w, h = img.size
-    img.blit(pimg, target=(w-PERF_CTRS-53, h-my), mask=mask)
+      w, h = img.size
+      img.blit(pimg, target=(w-PERF_CTRS-53, h-my), mask=mask)
     
-    del pimg, mask
+      del pimg, mask
 
   ############################################################################
   def batteryMeter(self, img):
@@ -356,17 +364,24 @@ class GpsLog(object):
     for i in range(7): bar=y+2-hb+(i+1)*(hb-2)/8; img.line(((x+1,bar),(x+wb-1,bar)), fg)
 
   ############################################################################
-  def drawMarkers(self, img):
+  def drawMarkers(self, img, offs=0):
     w, h = img.size
     
-    x = w-64
+    x    = w-64
+    yico = h-84+offs
+    ytxt = h-60
+
+    if not self.gps or not self.gps.dataAvailable():
+      self.fmarker = None
+      return
+
     if self.marker and self.marker[0] in gpslogimg.ICONS:
       ico = gpslogimg.ICONS[self.marker[0]]
-      ico.draw(img, pos=(x,h-84), alpha=0x7f7f7f)
+      ico.draw(img, pos=(x,yico), alpha=0x7f7f7f)
       x -= ico.img.size[0] + 5
      
     if self.lmsettings.uselm and self.lmsettings.warncat and\
-       not self.lmsettings.lmico and self.gps:
+       not self.lmsettings.lmico:
       
       try:
         nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
@@ -382,11 +397,11 @@ class GpsLog(object):
         except: cat = None
         if cat in gpslogimg.ICONS: ico = gpslogimg.ICONS[cat]
         else:                      ico = gpslogimg.ICONS["Default"]
-        ico.draw(img, pos=(x,h-84), alpha=0xc0c0c0)
+        ico.draw(img, pos=(x,yico), alpha=0xc0c0c0)
         caption = nearest.name
         if cat and caption.startswith(cat): caption = caption[len(cat):].strip(" -")
-        gpslogimg.alphaText(img, (2, h-60), caption, 
-                            fill=self.fg, alpha=self.txtalpha, font=IMG_FONT)
+        gpslogimg.alphaText(img, (2, ytxt), caption, 
+                            fill=self.fg, alpha=self.txtalpha, font=IMG_FONT, back=self.bg)
         e32.ao_yield()
         self.fmarker = cat
       else:
@@ -394,6 +409,10 @@ class GpsLog(object):
     else:
       self.fmarker = None
 
+    if not self.log:
+      gpslogimg.alphaText(img, (2, 30), "No Logfile Open",
+                          fill=0xff0000, alpha=self.txtalpha, font=IMG_FONT, back=self.bg)
+      
   def setRedraw(self, now=True):
     s = (now and -1) or 1
     self.settings.satupd = s*abs(self.settings.satupd)
@@ -417,10 +436,18 @@ class GpsLog(object):
     smit   = (font[0], font[1] * 3 / 4, font[2] | graphics.FONT_ITALIC)
     fg, bg = self.fg, self.bg
     
-    gps    = self.gps
+    gps      = self.gps
+    if gps and gps.dataAvailable():
+      position = gps.position
+      lat, lon = position
+      hdg      = gps.hdg
+    else:
+      positon = lat = lon = hdg = None
 
-    dispmode = self.dispmode()
+    dispmode   = self.dispmode()
+    fullscreen = (appuifw.app.screen == "full")
     
+
     #------------------------------------------------------------------------
     if self.busy > 0: # TODO: warn or beep or ...
       if DEBUG: print "Busy!", self.busy, "Mode:", dispmode
@@ -443,8 +470,7 @@ class GpsLog(object):
       text = unicode(text)
       # msr = self.view.measure_text(u"MM", font)[0]
       # dy = msr[3]-msr[1]
-      dy = 0
-      self.view.text((x, y-dy), text, fill=fill, font=font)
+      self.view.text((x, y), text, fill=fill, font=font)
       
     if not hasattr(self.view, "drawNow"): # i.e. GLCanvas
       img = graphics.Image.new(self.view.size)
@@ -461,9 +487,16 @@ class GpsLog(object):
     hl = -self.view.measure_text(u"M", bold)[0][1] + 3
 
     def clearBottom():
+      hc = (fullscreen and 30) or 20
       self.view.rectangle(((2,h-10),(w-54-PERF_CTRS,h)), bg, fill=bg)
-      self.view.rectangle(((w-51,h-20),(w,h)), bg, fill=bg)
+      self.view.rectangle(((w-51,h-hc),(w,h)), bg, fill=bg)
 
+    def dot(drawable, a, col=0xbf0000, sr=3):
+      a  = math.radians(a)
+      x  = int(math.sin(a) * r)
+      y  = int(math.cos(a) * r)
+      drawable.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), col, fill=col)
+    
     if gps != None and gps.dataAvailable():
       loctime = gps.localtime
       gpsname = gps.name
@@ -472,7 +505,7 @@ class GpsLog(object):
       gpsname = self.settings.btdevice
     
     #------------------------------------------------------------------------
-    self.drawMarkers(img)
+    self.drawMarkers(img, offs=(fullscreen and -10) or -1)
 
     #------------------------------------------------------------------------
     self.cpuGraph(img)
@@ -504,20 +537,33 @@ class GpsLog(object):
       if self.log:
         prnt(2, line, os.path.basename(self.log.name()), bold); line += hl*3/2
       else:
-        line += hl
+        prnt(2, line, "No logfile!", bold); line += hl*3/2
       
-      
-      show("Latitude",  coord(gps.lat))
-      show("Longitude", coord(gps.lon,"EW"))
+      show("Latitude",  coord(lat))
+      show("Longitude", coord(lon,"EW"))
 
-      if gps.speed   != None: show("Speed",     "%-5.1f km/h" % gps.speed)
-      if getattr(gps, "corralt", None): 
-        show("Altitude",  "%-4.0f m" % gps.corralt)
-      if gps.hdg     != None: show("Heading",   u"%-4.0f\u00b0" % gps.hdg)
-    
-      if gps.time:
-        line += hl
-        show("Time", time.strftime("%H:%M:%S", gps.localtime))
+      if self.log: avgspd = (self.log.distance() / (time.time() - self.log.starttime()) * 3.6)
+      else:        avgspd = 0.000001
+
+      if gps.speed   != None:            show("Speed",     u"%-5.1f km/h" % gps.speed)
+      if h > 240:                        show("Avg. Speed",u"%-5.1f km/h" % avgspd)
+      if getattr(gps, "corralt", None):  show("Altitude",  u"%-4.0f m" % gps.corralt)
+      else:                              line += hl
+      if hdg != None:                    show("Heading",   u"%-4.0f\u00b0" % hdg)
+      else:                              line += hl
+      
+      if self.dest and position and position != (None,None):
+        if h > 240: line += hl
+        ddist = self.dest.distance(position)
+        if ddist >= 1000.0: show("Destination",u"%-5.1f km" % ( ddist / 1000.0))
+        else:               show("Destination",u"%-5.0f m" % ddist)
+        if h > 240:
+          if gps.speed > 1.0: spd = gps.speed
+          else:               spd = avgspd + 0.000001
+          show("Arrival", time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / spd * 3.6)))
+        
+      line += hl
+      if gps.time:                       show("Time", time.strftime("%H:%M:%S", gps.localtime))
     
       if self.extended:
         line += hl
@@ -541,8 +587,8 @@ class GpsLog(object):
 
       img.ellipse(((cx-r,cy-r),(cx+r,cy+r)), fg, width=2)
       
-      if gps.hdg != None:
-        a  = math.radians(gps.hdg)
+      if hdg != None:
+        a  = math.radians(hdg)
         da = math.pi/16
         x  = int(math.sin(a) * r);     y  = int(math.cos(a) * r)
         x1 = -int(math.sin(a-da) * r); y1 = -int(math.cos(a-da) * r)
@@ -553,6 +599,12 @@ class GpsLog(object):
         img.polygon(((cx+x, cy-y),(cx+xa,cy-ya),(cx+x2,cy-y2)), 0xbf0000, fill=0xbf0000)
         img.line(((cx+x, cy-y),(cx+xa,cy-ya)), bg)
         
+      if self.dest != None and lat and lon:
+        brg = bearing(position, (self.dest.lat, self.dest.lon))
+        dot(img, brg, col=0x0000ff)
+        if hdg:
+          dot(img, brg-hdg, col=0xff0000)
+
       blit(img)
       
       
@@ -581,11 +633,22 @@ class GpsLog(object):
       else:
         dx = 2
 
+      if self.dest != None and lat and lon:
+        ddist = self.dest.distance(position)
+        if ddist >= 1000.0: fdist = u"%5.1f km" % ( ddist / 1000.0)
+        else:               fdist = u"%5.0f m" % ddist
+        mt = self.view.measure_text(fdist, bold)[0]
+        yd, ya = cy - r - 2*mt[1], cy + r + mt[1]
+        prnt(cx-mt[2]/2, yd, fdist, bold)
+        if gps.speed > 1.0: spd = gps.speed
+        else:               spd = ((self.log and (self.log.distance() / (time.time() - self.log.starttime()) * 3.6)) or 0.0) + 0.000001
+        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / spd * 3.6)), bold)
+
       dy = -self.view.measure_text(u"M", large)[0][1]
       prnt(2, h-20-dy, mode, small)
 
-      prnt(w - 75, 10, coord(gps.lon),      small)
-      prnt(w - 75, 20, coord(gps.lat,"EW"), small)
+      prnt(w - 75, 10, coord(lon),      small)
+      prnt(w - 75, 20, coord(lat,"EW"), small)
   
     #------------------------------------------------------------------------
     elif dispmode == DISP_SATGRAPH:
@@ -622,11 +685,24 @@ class GpsLog(object):
             img.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), self.colmap["satmark"], fill=self.colmap["satmark"]) #xffffff)
             i += 1
         
+        if self.dest != None and lat and lon:
+          brg = bearing(position, (self.dest.lat, self.dest.lon))
+          dot(img, brg, col=0x0000ff)
+          if hdg:
+            dot(img, brg-hdg, col=0xff0000)
+
         blit(img)
       
         if gps.fix:
+          fix = gps.fix
+        else:
+          if   position == None or position == (None,None): fix = 1
+          elif getattr(gps, "corralt", None) == None:       fix = 2
+          else:                                             fix = 3
+         
+        if fix != None:
           prnt(2, 15, u"Fix: ")
-          prnt(2+2*dx, 15, u"%s" % FIXTYPES[gps.fix-1], bold)
+          prnt(2+2*dx, 15, u"%s" % FIXTYPES[fix-1], bold)
 
         if gps.sat: # put labels inside the mark circles
           i = 0
@@ -651,12 +727,8 @@ class GpsLog(object):
           prnt(w-60, h-60, u"Vis.:")
           prnt(w-60+3*dx, h-60, u"%d" % gps.vsat, bold)
           
-        sr = 3
         if gps.hdg != None:
-          a  = math.radians(gps.hdg)
-          da = math.pi/16
-          x  = int(math.sin(a) * r);     y  = int(math.cos(a) * r)
-          self.view.ellipse(((cx+x-sr,cy-y-sr),(cx+x+sr,cy-y+sr)), 0xbf0000, fill=0xbf0000)
+          dot(self.view, gps.hdg, col=0x008000)
           prnt(w-75,      15, u"Hdg.:")
           prnt(w-73+3*dx, 15, u"%.1f\u00b0" % gps.hdg, bold)
 
@@ -681,7 +753,7 @@ class GpsLog(object):
       def show(lm):
         global line
         wpt, svgicon = lm
-        d = wpt.distance(gps.position)
+        d = wpt.distance(position)
         if d < 1000: d = "%7.f" % d; unit = "m"
         else:        d = "%7.1f" % (d / 1000); unit = "km"
 
@@ -713,16 +785,17 @@ class GpsLog(object):
       def searchThread():
         try:
           if self.nearest: return # probably still in use
-          nearest = gpsloglm.NearestLm(gps.lat, gps.lon,
-                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0,
+          nearest = gpsloglm.NearestLm(lat, lon,
+                                       max=h/hl-1, maxdist=self.lmsettings.radius*1000.0,
                                        cat=self.lmsettings.dispcat)
+          if self.dest:  nearest = [ (self.dest, None) ] +nearest
           self.nearest = nearest
         except:
           if DEBUG: raise
           self.nearest = []
         if cputime: self.thperf += cputime()
         
-      if gps.lat != None and gps.lon != None and self.lmsettings.dispcat != []: # may have become invalid
+      if lat != None and lon != None and self.lmsettings.dispcat != []: # may have become invalid
         if self.nearest == None:
           if (self.lmsettings.upd < 0) or (int(gps.time - self.prevlm) >= self.lmsettings.upd):
             self.prevlm  = gps.time
@@ -737,7 +810,7 @@ class GpsLog(object):
 
           for lm in self.nearest:
             icon(lm, img)
-            if line + hl > h:
+            if line + hl > h - hl:
               break
         
           line = saveline
@@ -745,7 +818,7 @@ class GpsLog(object):
 
           for lm in self.nearest:
             show(lm)
-            if line + hl > h:
+            if line + hl > h - hl:
               break
         else: # just clear the screen and redraw the name and time area
           clearBottom()
@@ -762,6 +835,7 @@ class GpsLog(object):
 
       
     prnt(2, h, gpsname, smit)
+    if fullscreen: prnt(w - 52, h-20, self.modetitle(), smit)
     prnt(w - 52, h-10, unicode(time.strftime("%H:%M:%S", loctime)), small)
     prnt(w - 52, h,    unicode(time.strftime("%d.%m.%Y", loctime)), small)
 
@@ -771,7 +845,7 @@ class GpsLog(object):
     self.setRedraw(False)
 
   ############################################################################
-  def showLandmarks(self):
+  def showLandmarks(self): # show LMs as listbox, for the regular version see drawGraph
 
     self.cpuGraph(None)
 
@@ -862,7 +936,7 @@ class GpsLog(object):
     except Exception, exc:
       if not DEBUG: appuifw.note(u"Error displaying Data: %s" % str(exc), "error")
       if DEBUG: raise
-      self.stop(display=False)
+      self.stop(display=False, closeGps=True)
 
   ############################################################################
   def dispmode(self):
@@ -890,6 +964,56 @@ class GpsLog(object):
 
     appuifw.app.menu[1] = (u"Pause" + mark, self.togglePause)
     self.display()
+
+  ############################################################################
+  def cycleTravel(self, forward=True, set=None):
+    if self.dispmode() != DISP_COMPASS:
+      return
+    if set != None:
+      if set not in range(len(TRAVELMODES)): return
+    elif forward:   set = (self.settings.trvlmode+1) % len(TRAVELMODES)
+    else:           set = (self.settings.trvlmode-1) % len(TRAVELMODES)
+
+    self.settings.trvlmode = set
+
+  ############################################################################
+  def cycleMode(self, forward=True, set=None):
+    # if not self.gps:
+    #   return
+    if set != None:
+      if set not in range(len(DISPMODES)): return
+    elif forward:   set = (self.settings.dispmode+1) % len(DISPMODES)
+    else:           set = (self.settings.dispmode-1) % len(DISPMODES)
+
+    if self.settings.dispmode == DISP_LANDMARK and not self.lmsettings.uselm:
+      self.cycleMode(forward)
+      
+    self.settings.dispmode = set
+
+    self.display(immediately=True)
+
+  ############################################################################
+  def colorMode(self, mode=None):
+    if mode == None:
+      if self.colmode == "day": self.colmode = "night"
+      else:                     self.colmode = "day"
+    else:
+      self.colmode = mode
+    self.fg, self.bg, self.colmap = DISP_COLORS[self.colmode]
+    # frequently used
+    self.txtalpha = self.colmap["txtalpha"]
+    
+    if mode == None:
+      self.display(immediately=True)
+
+  ############################################################################
+  def screenMode(self, set=None):
+    if set:                              mode = set
+    elif appuifw.app.screen == "normal": mode = "full"
+    else:                                mode = "normal"
+    appuifw.app.screen = self.settings.screen = mode
+    e32.ao_yield()
+    self.display(immediately=True)
 
   ############################################################################  
   def markName(self):
@@ -952,74 +1076,79 @@ class GpsLog(object):
 
     except:
       self.marker = None
-      self.stop()
+      self.stop(closeGps=True)
       raise
 
   ############################################################################
   def markWaypoint(self):
-    if not self.gps or not self.log:
+    gps = self.gps
+    if not gps:
       return
     if not self.gps.dataAvailable() or self.gps.position == (None,None):
       appuifw.note(u"No GPS data at the moment.", "error")
       return
 
-    wpt = self.log.waypoint(self.gps)
-    
+    if self.log:
+      wpt = self.log.waypoint(gps)
+      desc = os.path.basename(self.log.name())
+    else:
+      wpt  = Waypointnt(("Landmark", gps.lat,  gps.lon,  alt,  gps.time,
+                                     gps.speed,gps.hdg,  gps.fix,
+                                     gps.hdop, gps.vdop, gps.pdop,
+                                     gps.hacc, gps.vacc, attr))
+      desc = "GPS Log"
+      
     if self.lmsettings.uselm and self.lmsettings.wptlm:
-      desc = "%s, %s" % (os.path.basename(self.log.name()), wpt[0])
-      tm = (self.gps.time != None and self.gps.time) or time.time()
+      desc = "%s, %s" % (desc, wpt[0])
+      tm = (gps.time != None and gps.time) or time.time()
       gpsloglm.CreateLm(wpt, name=isoformat(tm), desc=desc,
                         cat=self.lmsettings.wptcat, edit=self.lmsettings.lmedit)
     self.display()
 
   ############################################################################
-  def cycleTravel(self, forward=True, set=None):
-    if self.dispmode() != DISP_COMPASS:
-      return
-    if set != None:
-      if set not in range(len(TRAVELMODES)): return
-    elif forward:   set = (self.settings.trvlmode+1) % len(TRAVELMODES)
-    else:           set = (self.settings.trvlmode-1) % len(TRAVELMODES)
-
-    self.settings.trvlmode = set
-
-  ############################################################################
-  def cycleMode(self, forward=True, set=None):
-    if not self.gps:
-      return
-    if set != None:
-      if set not in range(len(DISPMODES)): return
-    elif forward:   set = (self.settings.dispmode+1) % len(DISPMODES)
-    else:           set = (self.settings.dispmode-1) % len(DISPMODES)
-
-    if self.settings.dispmode == DISP_LANDMARK and not self.lmsettings.uselm:
-      self.cycleMode(forward)
-      
-    self.settings.dispmode = set
-
-    self.display(immediately=True)
-
-  ############################################################################
-  def colorMode(self, mode=None):
-    if mode == None:
-      if self.colmode == "day": self.colmode = "night"
-      else:                     self.colmode = "day"
+  def selectDestination(self, landmark=False, clear=False):
+    if clear:
+      del self.dest; self.dest = None; self.settings.dest="None"; return
+    if landmark and not self.lmsettings.uselm:
+      appuifw.note(u"Landmarks not installed", "error")
+    if not landmark:
+      rc = appuifw.multi_query(u"Latitude", u"Longitude")
+      if not rc: return
+      try:
+        lat, lon = float(rc[0]), float(rc[1])
+        assert ( -90.0 <= lat) and (lat <=  90.0) and\
+               (-180.0 <= lon) and (lon <= 180.0), "Invalid!"
+        wpt = Waypoint(['Destination', lat, lon])
+      except:
+        appuifw.note(u"Invalid Input", "error")
+        raise
+        return
     else:
-      self.colmode = mode
-    self.fg, self.bg, self.colmap = DISP_COLORS[self.colmode]
-    # frequently used
-    self.txtalpha = self.colmap["txtalpha"]
-    
-    if mode == None:
-      self.display(immediately=True)
+      screen = appuifw.app.screen
+      try:
+        appuifw.app.screen = "normal"
+        rc, id, db = gpsloglm.landmarks.ShowSelectLandmarkDialog(0)
+        if rc == 0: return
+        wpt, _icon = gpsloglm.ReadLmWpt(db, id)
+        db.Close()
+      finally:
+        appuifw.app.screen = screen
+
+    self.dest = wpt
+    self.settings.dest = repr(wpt)
 
   ############################################################################
-  def screenMode(self, set=None):
-    if set:                              mode = set
-    elif appuifw.app.screen == "normal": mode = "full"
-    else:                                mode = "normal"
-    appuifw.app.screen = self.settings.screen = mode
-    self.display(immediately=True)
+  def toggleGps(self):
+    if self.log:
+      return
+
+    if self.gps:
+      self.stopping = True
+      self.stopGps(); self.gpson = False
+    else:
+      self.startGps()
+    self.display()
+    self.stopping = False
 
   ############################################################################
   def gpsCallback(self, gps):
@@ -1059,7 +1188,7 @@ class GpsLog(object):
         if not self.log:
           return
 
-        if not gps.dataAvailable() or not gps.lat:
+        if not gps.dataAvailable() or not gps.position or gps.position == (None,None):
           return
 
         if self.prevrec != None and\
@@ -1090,7 +1219,7 @@ class GpsLog(object):
       except Exception, exc:
         if not DEBUG: appuifw.note(u"Error processing GPS: %s" % str(exc), "error")
         if DEBUG: raise
-        self.stop(display=False)
+        self.stop(display=False, closeGps=True)
 
         # The user might have missed the error message.
         rc = appuifw.query(u"GPS acquisition terminated. Try to restart?", "query")
@@ -1126,8 +1255,9 @@ class GpsLog(object):
                       
     self.logn = None
 
+    
   ############################################################################
-  def start(self):
+  def startGps(self):
     try:
       if self.settings.btdevice == INTERNAL_GPS:
         if PositioningProvider != None:
@@ -1156,6 +1286,8 @@ class GpsLog(object):
           appuifw.note(u"Bluetooth failed to install! Please se the README.", "error")
           return
 
+      self.cbcg = self.gps.registerCallback(globalCallback) # the dreaded PANIC CONE 8
+
     except SymbianError, exc:
       if exc[0]==-46: # KErrPermissionDenied
         if not DEBUG: appuifw.note(u"Permission denied. Did you sign GpsLog? See README.", "error")
@@ -1168,24 +1300,33 @@ class GpsLog(object):
       if not DEBUG: appuifw.note(u"Error opening GPS: %s" % str(exc), "error")
       else:         raise
       return
+    
+  def stopGps(self):
+    if self.gps:
+      self.gps.close(); del self.gps; self.gps = None
+      
+  ############################################################################
+  def start(self):
+
+    self.gpson = (self.gps != None)
 
     if self.paused: self.togglePause()
 
     try:
       self.openLog()
 
-      # self.cbcg = self.gps.registerCallback(self.gpsCallback)
-      self.cbcg = self.gps.registerCallback(globalCallback) # the dreaded PANIC CONE 8
-      
       self.started = time.time()
 
     except Exception, exc:
       if not DEBUG: appuifw.note(u"Error starting log: %s" % str(exc), "error")
-      self.gps.close(); del self.gps; self.gps = None
+      self.stopGps()
       if DEBUG: raise
       return
 
   
+    if not self.gps:
+      self.startGps()
+
     appuifw.app.menu[0] = (u"Stop", self.stop)
     if self.view != None: self.view.bind(EKeyYes, self.stop)
     if self.lbox != None: self.lbox.bind(EKeyYes, self.stop)
@@ -1193,13 +1334,13 @@ class GpsLog(object):
     self.display()
     
   ############################################################################
-  def stop(self, display=True):
+  def stop(self, display=True, closeGps=False):
     if self.stopping: return
     appuifw.app.menu[0] = (u"(Stopping...)", self.stop)
     self.stopping = True
     self.markOut(display=False)
-    if self.gps != None:
-      self.gps.close(); del self.gps; self.gps = None
+    if self.gps != None and (not self.gpson or closeGps):
+      self.stopGps()
     self.closeLog()
     self.stopping = False
     self.markcnt  = 0
@@ -1236,6 +1377,7 @@ class GpsLog(object):
       (("dispmode",  "Display Mode", True), "number",   [], DISP_NORM),
       (("trvlmode",  "Travel Mode", True), "number",   [], 0),
       (("screen",    "Screen Mode", True), "text",   [], u"normal"),
+      (("dest",      "Destination", True), "text",   [], u"None"),
       (("haspos",    "Positioning avail.", True), "number",   [], 0),
       (("hasloc",    "LocationRequestor avail.", True), "number",   [], 0),
       (("hassim",    "Simulator avail.", True), "number",   [], 0),
@@ -1300,6 +1442,10 @@ class GpsLog(object):
     try:    self.altcorr = int(self.settings.altcorr)
     except: self.altcorr = 0; self.settings.altcorr = u"0"
   
+    self.dest = eval(self.settings.dest, {"NaN": gpsloglm.NAN})
+    if self.dest != None:
+      self.dest = Waypoint(self.dest)
+
   ############################################################################
   def editSettings(self):
   
@@ -1356,7 +1502,6 @@ is out of reach.
     if self.log != None and not force:
       if not appuifw.query(u"Logging still active. Really exit?", "query"):
         return
-
     self.lck.signal()
 
   ############################################################################
@@ -1372,7 +1517,9 @@ is out of reach.
     if self.wdtimer:
       self.wdtimer.cancel(); del self.wdtimer; self.wdtimer = None
     if self.gps != None:
-      self.gps.close(); del self.gps; self.gps = None
+      self.stopGps()
+    if self.dest != None:
+      del self.dest; self.dest = None
     if self.view != None:
       del self.view; self.view = None
     if self.lbox != None:
