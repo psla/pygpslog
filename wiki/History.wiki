@@ -1,6 +1,19 @@
 #summary Version Changelog.
 
 = Version History =
+=== Legend ===
++ Added feature
 
-== 0.1.7  ==
+- Bugfix
+
+~ Changed functionality
+
+== 0.2.0 - Mar. 14, 2008 ==
+ * + Night mode
+ * + Full screen mode
+ * + CPU usage meter
+ * + Use `envy`-module to prevent accidental red-key-exit.
+ * - Waypoint marking fixed
+
+== 0.1.7 - Mar. 07, 2008 ==
 Initial public version.
