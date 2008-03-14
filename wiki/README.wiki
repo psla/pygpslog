@@ -201,6 +201,9 @@ radius of half the distance.
 
 
 = SETTINGS =
+== General ==
+== Landmarks ==
+The landmark settings are only available if the Landmarks module is [#INSTALLATION installed].
 
 = TROUBLESHOOTING =
 == Known Problems ==
