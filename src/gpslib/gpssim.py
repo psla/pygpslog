@@ -84,7 +84,7 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
     self.interval = interval
     self.data     = None
     self.current  = 0
-    self.map      = None
+    self.map      = xmlmap
     self.count    = 0
     self.skip     = skip
     self.ptime    = None
@@ -137,6 +137,18 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
 
   sattime  =  property(gettime) # see below
                                      
+  def next(self):
+    self.prev = (self.position, self.time) # xml data gets cleared for memory efficiency!
+    if not self.data.next():
+      self.current += 1
+      if self.current >= len(self.sources): self.current = 0
+      self.data.close(); deldata, self.data = self.data, None; del deldata
+      self.data = XMLData(self.sources[self.current], map=self.map)
+      self.data.next()
+    self.count += 1
+    self.name = "%s - %d" % (os.path.basename(self.sources[self.current]), self.count)
+    self.setSpeed()
+
   def dataAvailable(self):
     try: # sometimes self.data gets lost ;-)
       return self.data and self.data.rec != None
@@ -144,8 +156,7 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
       return False
 
   def process(self):
-    upd = self.wait()
-    if upd:
+    if self.wait():
       self.next()
     if self.dataAvailable():
       self.notifyCallbacks()
@@ -179,18 +190,6 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
     if dt <= 0: self.speed = None; return
     self.speed = round(3.6 * distance(self.position, self.prev[0]) / dt, 2)
 
-  def next(self):
-    self.prev = (self.position, self.time) # xml data gets cleared for memory efficiency!
-    if not self.data.next():
-      self.current += 1
-      if self.current >= len(self.sources): self.current = 0
-      deldata, self.data = self.data, None; del deldata
-      self.data = XMLData(self.sources[self.current], map=self.map)
-      self.data.next()
-    self.count += 1
-    self.name = "%s - %d" % (os.path.basename(self.sources[self.current]), self.count)
-    self.setSpeed()
-
   def makeKml(self):
     if not self.kml or not self.dataAvailable():
       return
@@ -214,9 +213,16 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
 
   def threadExit(self):
     gpslib.gpsstream.AbstractStreamProvider.threadExit(self)
+
     if self.data:
-      del self.data
-    
+      self.data.close(); del self.data; self.data = None
+    if self.settings:
+      del self.settings; self.settings = None
+    if self.kml:
+      del self.kml; self.kml = None
+    if self.prev:
+      del self.prev; self.prev = None
+      
   def close(self):
     gpslib.gpsstream.AbstractStreamProvider.close(self)
     gpslib.gpsbase.AbstractProvider.close(self)
