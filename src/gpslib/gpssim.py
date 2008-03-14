@@ -151,7 +151,7 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
 
   def dataAvailable(self):
     try: # sometimes self.data gets lost ;-)
-      return self.data and self.data.rec != None
+      return getattr(self, "data", None) and self.data.rec != None
     except: 
       return False
 
