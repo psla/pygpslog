@@ -34,9 +34,11 @@ It's features include
   * Record data in standard [http://www.topografix.com/GPX GPX] or [http://www.oziexplorer.com/ OziExplorer] format.
   * Easy marking of waypoints (with or without confirmation).
   * Easy marking of six different track segment types (e.g. speed limits).
-  * The usual: Data view, Satellite View, Compass View...
   * Integration with Nokia's landmarks.
-
+  * Simple navigation like Nokia's Navigator application.
+  * The usual: Data view, Satellite View, Compass View...
+  * Night mode.
+  
 But best see the [README#SCREENSHOTS Screenshots] below.
 
 = WHAT'S NEW =
