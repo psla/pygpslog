@@ -36,7 +36,8 @@ def babelExtract(text, patt):
   return None
 
 class XMLData(object):
-  GPX_MAP = { 
+  GPX_MAP = {
+    "root":   "gpx",
     "record": "trkpt",
     "lat":    "@lat",
     "lon":    "@lon",
@@ -61,6 +62,7 @@ class XMLData(object):
     "namespace": GPX11_NS
   }
   BABELKML_MAP = {
+    "root":   "kml",
     "record": "Placemark",
     "lat":    ("Point/coordinates", lambda c: float(c.split(",")[1])),
     "lon":    ("Point/coordinates", lambda c: float(c.split(",")[0])),
@@ -87,19 +89,32 @@ class XMLData(object):
     else: self.map = ( self.ext in XMLData.MAPS and XMLData.MAPS[self.ext]) or XMLData.GPX_MAP
     # self.__killNs()
     # self.records = self.xml.findall(self.map["record"])
+    self.context = None
     self.recIter = self.getiterator(self.map["record"])
     self.rec     = None
     self.reset()
     
   def __del__(self):
-    self.inp.close()
-    print "Closed"
+    self.close()
     
   def __killNs(self, elt=None):
     if elt == None: elt = self.rec
     for e in [elt] + elt.findall(".//*"):
       e.tag = e.tag.replace("{"+self.map["namespace"]+"}", "")
     
+  def close(self):
+    if self.rec:
+      del self.rec;     self.rec     = None
+    if self.inp:
+      self.inp.close()
+      del self.inp;     self.inp     = None
+    if self.recIter:
+      try: self.recIter.next()
+      except: pass
+      del self.recIter; self.recIter = None
+    if self.context:
+      del self.context; self.context = None
+
   def reset(self):
     self.sat     = None
     self.cache   = {}
@@ -107,20 +122,29 @@ class XMLData(object):
     self._vsat   = 0
     
   def getiterator(self, tag=None):
-    for evt, elt in ET.iterparse(self.inp):
+    rootTag       = self.map["root"]
+    self.context  = iter(ET.iterparse(self.inp, events=("start", "end")))
+    evt, root     = self.context.next()
+    
+    for evt, elt in self.context:
       self.__killNs(elt)
-      if tag == None or elt.tag == tag:
+      if (tag == None or elt.tag == tag) and evt == "end":
         yield elt
         elt.clear()
-    self.inp.close()
+        root.clear()
+    del root
+    self.close()
 
   def next(self):
+    if not self.recIter:
+      return False
     try:
       del self.cache
       self.reset()
       self.rec = self.recIter.next()
       return True
     except StopIteration:
+      del self.recIter; self.recIter = None
       return False
 
   def getSatdata(self):
