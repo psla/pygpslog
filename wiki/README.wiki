@@ -2,6 +2,7 @@
 #labels Featured,Documentation
 == CONTENTS ==
  # [#ABOUT ABOUT]
+ # [#WHAT_S_NEW WHAT'S NEW]
  # [#LICENSE LICENSE]
  # [#REQUIREMENTS REQUIREMENTS]
  # [#CONTACT CONTACT]
@@ -37,6 +38,9 @@ It's features include
   * Integration with Nokia's landmarks.
 
 But best see the [README#SCREENSHOTS Screenshots] below.
+
+= WHAT'S NEW =
+Please see the [History] page.
 
 = LICENSE =
   see [LICENSES] and [COPYING]
@@ -83,7 +87,7 @@ e-mail automagically ;-)
  # Install to your device
  # Done!
  
-Almost... I'd strongly recommend you to download, sign, and install those additional two modules:
+Almost: I'd strongly recommend you to download, sign, and install those additional two modules:
  * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page], and
  * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site.
  These two modules give you additional features like a CPU graph and more meaningful dialog menus.
@@ -167,6 +171,9 @@ usefull in night mode.
 Night mode and day mode can be toggled with the `'0'` key. Night mode will
 be automatically active the the application is started after 7pm or before
 5am (should be 9am, but nevermind ;-) )
+
+In idle (non-logging) mode, GPS-data display can be toggled on and off using
+the `'Select'` (or `'Enter'`) key.
 
 === Waypoints ===
 The `'#'` key inserts a waypoint into the log file. Currently, this is done
