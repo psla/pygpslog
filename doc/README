@@ -1,7 +1,8 @@
 #summary pygpslog Documentation.
-#labels Featured
+#labels Featured,Documentation
 == CONTENTS ==
  # [#ABOUT ABOUT]
+ # [#WHAT_S_NEW WHAT'S NEW]
  # [#LICENSE LICENSE]
  # [#REQUIREMENTS REQUIREMENTS]
  # [#CONTACT CONTACT]
@@ -18,6 +19,9 @@
  # [#SETTINGS SETTINGS]
   # [#General General]
   # [#Landmarks Landmarks]
+ # [#TROUBLESHOOTING TROUBLESHOOTING]
+  # [#Known_Problems Known Problems]
+  # [#FAQ FAQ]
  # [#SCREENSHOTS SCREENSHOTS]
  
 = ABOUT =
@@ -34,6 +38,9 @@ It's features include
   * Integration with Nokia's landmarks.
 
 But best see the [README#SCREENSHOTS Screenshots] below.
+
+= WHAT'S NEW =
+Please see the [History] page.
 
 = LICENSE =
   see [LICENSES] and [COPYING]
@@ -74,12 +81,17 @@ e-mail automagically ;-)
  # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
  # Get the [http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis LocationRequestor] module.
  # Get the [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis Landmarks] module.
- # Get the [http://code.google.com/p/pygpslog/downloads/list latest version] of pygpslog.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?q=label:Featured latest version] of pygpslog.
  # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
  # Sign !LocationRequestor, Landmarks and !PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
  # Install to your device
  # Done!
  
+Almost: I'd strongly recommend you to download, sign, and install those additional two modules:
+ * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page], and
+ * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site.
+ These two modules give you additional features like a CPU graph and more meaningful dialog menus.
+
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
 Symbian Signed seems to be in the process of changing their signing procedures.
@@ -104,9 +116,10 @@ the [#INSTALLATION installation process].
 === Location Requestor === 
 (Preferred method, uses 3rd Party Python module)
 ==== Pro's: ====
- * GPS can be shared with other applications
+ * GPS can be shared with other applications.
  * Very extensive data available.
- * Works with external or internal GPS devices
+ * Works with external or internal GPS devices.
+ * Continues to work, even if Bluetooth connection is lost.
 ==== Con's: ====
  * Requires the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
  * Must be Symbian signed
@@ -115,7 +128,7 @@ the [#INSTALLATION installation process].
 ==== Pro's: ====
  * Most extensive (and probably precise) data available.
  * Can be used without Symbian Signed.
- * No additional modules required
+ * No additional modules required.
 ==== Con's ===
  * Requires an external Bluetooth GPS.
  * GPS cannot be shared with Nokia Maps, Navigator, mgMaps or others.
@@ -123,12 +136,12 @@ the [#INSTALLATION installation process].
 === Nokia Positioning === 
 (uses standard Python module)
 ==== Pro's: ====
- * GPS can be shared with other applications
- * Works with external or internal GPS devices
- * No additional modules required
+ * GPS can be shared with other applications.
+ * Works with external or internal GPS devices.
+ * No additional modules required.
 ==== Con's: ====
- * Severely limited data (no satellite info, ...)
- * Must be Symbian signed
+ * Severely limited data (no satellite info, ...).
+ * Must be Symbian signed.
   
 = USAGE =
 
@@ -147,12 +160,23 @@ Information display is only active if logging is switched on.
 The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
 between the different modes.
  # Overview - Log File Name and General GPS
- # Satellite View
  # Compass and Speed
  # Landmarks
- 
+ # Satellite View
+ # Power saving mode (logfile writing only)
+
+The `'2'` key switches the application in full screen mode. This especially
+usefull in night mode.
+
+Night mode and day mode can be toggled with the `'0'` key. Night mode will
+be automatically active the the application is started after 7pm or before
+5am (should be 9am, but nevermind ;-) )
+
+In idle (non-logging) mode, GPS-data display can be toggled on and off using
+the `'Select'` (or `'Enter'`) key.
+
 === Waypoints ===
-The `'0'` key inserts a waypoint into the log file. Currently, this is done
+The `'#'` key inserts a waypoint into the log file. Currently, this is done
 by inserting a named trackpoint into the GPX file. For !OziExplorer files,
 this doesn't have any effect in this version.
 
@@ -177,7 +201,20 @@ radius of half the distance.
 
 
 = SETTINGS =
+== General ==
+== Landmarks ==
+The landmark settings are only available if the Landmarks module is [#INSTALLATION installed].
 
+= TROUBLESHOOTING =
+== Known Problems ==
+ * When using an external Bluetooth GPS, logfiles are closed, if the Bluetooth connection is lost.
+ * Landmark display eats *a lot* of CPU time and battery. It's has been improved by using a cache.
+ * _A lot_ of unhandled exceptions... Most of them will only be visible on program close.
+
+== FAQ ==
+ * Q: When I try to start PyGpsLog, nothing happens.
+ * A: Try to install PyGpsLog to the same drive as your Python installation.
+ 
 = SCREENSHOTS =
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
 and
