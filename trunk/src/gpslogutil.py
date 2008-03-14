@@ -147,10 +147,19 @@ def simpleDestpoint((lat1, lon1), a, d):
 
   return (Rad2Deg(lat2), Rad2Deg(lon2))
 
+def simpleBearing(p1, p2):
+  """http://www.movable-type.co.uk/scripts/latlong.html"""
+  dLon = Deg2Rad(p2[1]-p1[1])
+  lat1, lon1 = Deg2Rad(p1[0]), Deg2Rad(p1[1])
+  lat2, lon2 = Deg2Rad(p2[0]), Deg2Rad(p2[1])
+  y = sin(dLon) * cos(lat2)
+  x = cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon)
+  return (Rad2Deg(atan2(y, x)) + 360.0) % 360.0
 
 distance  = earthDistance
 midpoint  = simpleMidpoint
 destpoint = simpleMidpoint
+bearing   = simpleBearing
 
 class Waypoint(list):
   FIELDS = [ "name", "lat", "lon", "alt", "time",
@@ -174,12 +183,15 @@ class Waypoint(list):
       r = self.attr["radius"]
       if d <= r: d = 0.0
       else:      d -= r
-    except (KeyError, TypeError): pass
+    except (KeyError, TypeError, IndexError): pass
     return d
+
+  def bearing(self, other):
+    return bearing((self.lat, self.lon), other)
 
 class GpsLogfile(object):
   def __init__(self, logname=None, logdir=DEF_LOGDIR, ext=".log"):
-    self.ts = time.time()
+    self.ts = time.time() - 0.000001 # ;-) so we'll always get a difference > 0
     if logname == None:
       logname = time.strftime("GpsLog-%Y%m%d-%H%M%S", time.gmtime(self.ts))
     logname = os.path.join(logdir, logname)
@@ -192,7 +204,7 @@ class GpsLogfile(object):
     self.dist     = 0.0
     self.prev     = None
     self.waypts   = []
-    
+
   def format(self, gps, skipped=0):
     self.numtrk   += 1
     if self.prev:
@@ -220,6 +232,8 @@ class GpsLogfile(object):
   def distance(self):
     return self.dist
 
+  def starttime(self):
+    return self.ts
 
 class OziLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,

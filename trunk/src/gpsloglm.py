@@ -2,14 +2,14 @@ try:    import landmarks
 except: landmarks = None
 import  gpslogutil
 
+INF = 1e300**2 # These might not work in future python versions
+NAN = INF/INF
+
 if landmarks != None:
   import os, e32, appuifw
 
   LANDMARK_DB = u"file://e:gpslog.ldb"
   LANDMARK_DB = None
-
-  INF = 1e300**2 # These might not work in future python versions
-  NAN = INF/INF
 
   ICONDIR  = r"C:\Data\Others" # (not e32.in_emulator() and str(os.path.split(appuifw.app.full_name())[0])) or "C:\Python"
   ICONFILE = unicode(os.path.join(ICONDIR,"gpsloglm_%s.mif" % appuifw.app.uid()))
