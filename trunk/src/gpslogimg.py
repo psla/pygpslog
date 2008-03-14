@@ -69,18 +69,33 @@ ICONS = dict([ (name, GpsIcon(idx)) for name, idx in ICONS ])
 del ALLICONS
 
 ##############################################################################
-def alphaText(drawable, coord, text, fill=0, font=None, alpha=None):
-  text = unicode(text)
-  ((x1,y1, x2,y2), x, n) = drawable.measure_text(text, font=font)
-  sz = (x2-x1, y2-y1)
-  timg = Image.new(sz); timg.clear(0xffffff)
-  timg.text((0, y2-y1), text, fill=fill, font=font)
-  if alpha == None:
-    drawable.blit(timg, target=coord)
-  else:
-    mask = Image.new(sz, 'L'); mask.clear(0x0)
-    mask.text((0, y2-y1), text, fill=alpha, font=font)
-    drawable.blit(timg, target=coord, mask=mask)
-    del mask
-  del timg
+# def realAlphaText(drawable, coord, text, fill=0, font=None, alpha=None, back=None):
+  # text = unicode(text)
+  # ((x1,y1, x2,y2), x, n) = drawable.measure_text(text, font=font)
+  # sz = (x2-x1, y2-y1+1)
+  # timg = Image.new(sz); timg.clear(0xffffff)
+  # timg.text((0, sz[1]-y2), text, fill=fill, font=font)
+  # if alpha == None:
+    # drawable.blit(timg, target=coord)
+  # else:
+    # mask = Image.new(sz, 'L'); mask.clear(0x0)
+    # mask.text((0, sz[1]-y2), text, fill=alpha, font=font)
+    # drawable.blit(timg, target=(coord[0]+x1, coord[1]+y2), mask=mask)
+    # del mask
+  # del timg
 
+
+def rgb(col):
+  return ( (col & 0xff0000) >> 16, (col & 0x00ff00) >> 8, col & 0x0000ff)
+
+def alphaBlend(fg, bg, alpha):
+  alpha = [ (0xff - a) / 255.0 for a in rgb(alpha) ]
+  col   = [ min(int(a * f + a * b), 0xff) for f, b, a in zip(rgb(fg), rgb(bg), alpha) ]
+  return col[0] << 16 | col[1] << 8 | col[2]
+
+def alphaText(drawable, coord, text, fill=0, font=None, alpha=None, back=0xffffff):
+  if alpha != None:
+    fill = alphaBlend(fill, back, alpha)
+
+  ((x1,y1, x2,y2), x, n) = drawable.measure_text(text, font=font)
+  drawable.text((coord[0]+x1,coord[1]-y1-y2), unicode(text), fill=fill, font=font)
