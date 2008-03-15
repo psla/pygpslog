@@ -156,25 +156,25 @@ The `'C'` (Backspace) key pauses the logging operation.
 Logging can be started automatically on program startup (see [#SETTINGS SETTINGS]).
 
 === Display Modes ===
-Information display is only active if logging is switched on.
+To save battery, information display is usually only active if logging is switched on.
+
+You can switch on GPS information in idle mode by pressing the `'Select'` key (or
+`'Enter'` key, joystick button).
 
 The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
 between the different modes.
  # Overview - Log File Name and General GPS
  # Compass and Speed
- # Landmarks
+ # Landmarks (if [#INSTALLATION installed])
  # Satellite View
- # Power saving mode (logfile writing only)
+ # Power saving mode (log file writing only)
 
 The `'2'` key switches the application in full screen mode. This especially
-usefull in night mode.
+useful in night mode.
 
-Night mode and day mode can be toggled with the `'0'` key. Night mode will
+Night and day mode can be toggled with the `'0'` key. Night mode will
 be automatically active the the application is started after 7pm or before
-5am (should be 9am, but nevermind ;-) )
-
-In idle (non-logging) mode, GPS-data display can be toggled on and off using
-the `'Select'` (or `'Enter'`) key.
+5am (should be 9am, but never mind ;-) )
 
 === Waypoints ===
 The `'#'` key inserts a waypoint into the log file. Currently, this is done
@@ -182,7 +182,8 @@ by inserting a named trackpoint into the GPX file. For !OziExplorer files,
 this doesn't have any effect in this version.
 
 If the Landmarks module is [#INSTALLATION installed], and the option is
-[#Landmark_Settings activated], a Nokia landmark is added.
+[#Landmark_Settings activated], a Nokia landmark with the current time stamp
+is added.
 
 === Track Segments ===
 There are six different segment types. Their default names are:
