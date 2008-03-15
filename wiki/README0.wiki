@@ -277,7 +277,9 @@ The other menu items are still in an experimental stage, and landmark category f
  
 = SCREENSHOTS =
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
-and
+,
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite.jpg
+and
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite-nm.jpg
 
 Some more [Screenshots here].
