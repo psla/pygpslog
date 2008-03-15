@@ -1,4 +1,4 @@
-#summary pygpslog Documentation. While README doesn't update
+#summary pygpslog Documentation. Use this while README doesn't update.
 #labels Featured,Documentation
 == CONTENTS ==
  # [#ABOUT ABOUT]
