@@ -160,7 +160,7 @@ Logging can be started automatically on program startup (see [#SETTINGS SETTINGS
 [http://www.topografix.com/GPX GPX] is a format used by a
 [http://www.topografix.com/gpx_resources.asp lot of devices and applications], including
 [http://earth.google.com GoogleEarth], and can be easily manipulated.
-Additionally, !PyGpsLog uses it's [http://pygpslog.googlecode.com/files/gpslog.xsd own extensions]
+Additionally, !PyGpsLog uses it's [http://pygpslog.googlecode.com/files/gpslog_0_2.xsd own extensions]
 to store additional data for later analysis.
 ===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
