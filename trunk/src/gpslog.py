@@ -546,7 +546,7 @@ class GpsLog(object):
       else:        avgspd = 0.000001
 
       if gps.speed   != None:            show("Speed",     u"%-5.1f km/h" % gps.speed)
-      if h > 240:                        show("Avg. Speed",u"%-5.1f km/h" % avgspd)
+      if h > 240 and self.log != None:   show("Avg. Speed",u"%-5.1f km/h" % avgspd)
       if getattr(gps, "corralt", None):  show("Altitude",  u"%-4.0f m" % gps.corralt)
       else:                              line += hl
       if hdg != None:                    show("Heading",   u"%-4.0f\u00b0" % hdg)
@@ -1219,12 +1219,14 @@ class GpsLog(object):
       except Exception, exc:
         if not DEBUG: appuifw.note(u"Error processing GPS: %s" % str(exc), "error")
         if DEBUG: raise
+        logopen = (self.log != None)
         self.stop(display=False, closeGps=True)
 
         # The user might have missed the error message.
-        rc = appuifw.query(u"GPS acquisition terminated. Try to restart?", "query")
-        if rc:
-          self.start()
+        if logopen:
+          rc = appuifw.query(u"GPS acquisition terminated. Try to restart?", "query")
+          if rc:
+            self.start()
     finally:
       self.gpssema = 0
 
