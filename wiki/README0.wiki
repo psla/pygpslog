@@ -162,7 +162,7 @@ Logging can be started automatically on program startup (see [#SETTINGS SETTINGS
 [http://earth.google.com GoogleEarth], and can be easily manipulated.
 Additionally, !PyGpsLog uses it's [http://pygpslog.googlecode.com/files/gpslog.xsd own extensions]
 to store additional data for later analysis.
-===== OziExplorer =====
+===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
 used for their `.plt` track files is very compact and by far enough to store basic
 trackpoint data.
