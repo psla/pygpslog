@@ -193,15 +193,15 @@ There are six different segment types. Their default names are:
 (This will be configurable in the future).
 
 The segments are activated by pressing one of the number keys from `'4'` to `'9'`.
-To end a segment press the same key agein or press the '`*'`-key.
+To end a segment press the same key again or press the '`*'`-key.
 
 If you press a different key from `'4'` to `'9'` while a segment is active,
 the current segment will be closed and a new segment opened.
 
 If the Landmarks module is [#INSTALLATION installed], and the option is
 [#Landmark_Settings activated], a Nokia landmark is added, that marks the
-center between the start and the end of the segment and has a coverage
-radius of half the distance.
+center between the start and the end of the segment, has a coverage
+radius of half the distance and intersects the end points.
 
 
 = SETTINGS =
@@ -226,7 +226,7 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
  * *Store Waypoints as Landmarks*: Default: *on*.
  * *Edit New Landmarks*: Let's you edit or delete landmarks after insertion. Default: *on*.
  * *Category for Waypoints*: New [#Waypoints waypoints] will be assigned this category by default. Default: *(None)*.
- * *Store Markers as Landmarks*: Inserts a landmark for [#Track_Segments track segment] markers. The landmark will be placed in the center of the track with a coverage radius that intersects the end points. Default: *on*.
+ * *Store Markers as Landmarks*: Inserts a landmark for [#Track_Segments track segment] markers. Default: *on*.
  * *Landmark Search Radius*: Landmarks further away will not be displayed on the landmarks page. Increasing this may _significantly_ slow down the application. Default: *10* km.
  * *Notify Near Category*: Shows a notification (no audio yet) when you reach landmarks of a this category. Default: *(None)*.
  * *Distance for Notification*: Show the notification when closer. Default: *25* m
