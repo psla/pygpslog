@@ -147,7 +147,7 @@ the [#INSTALLATION installation process].
 = USAGE =
 
 === Logging ===
-They `'Yes'` (Green) key starts and stops the GPS logger. Every restart
+The `'Yes'` (Green) key starts and stops the GPS logger. Every restart
 creates a new log file in the [#SETTINGS configured] data directory (default:
 `C:\Data\GpsLog` or `E:\Data\GpsLog`).
 
