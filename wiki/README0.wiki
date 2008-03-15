@@ -87,10 +87,11 @@ e-mail automagically ;-)
  # Install to your device
  # Done!
  
-Almost: I'd strongly recommend you to download, sign, and install those additional two modules:
- * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page], and
- * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site.
- These two modules give you additional features like a CPU graph and more meaningful dialog menus.
+Almost: I'd strongly recommend you to download, sign, and install those additional three modules:
+ * [http://prdownloads.sourceforge.net/pyed/envy_3rd_1_0_4_unsigned.sis?download envy]. Read [http://discussion.forum.nokia.com/forum/showthread.php?t=122897&highlight=envy this post] for a description.
+ * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site, and
+ * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page].
+ These three modules give you additional features like a CPU graph, more meaningful dialog menus and prevent pygpslog from being accidentally closed by pressing the red key.
 
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
