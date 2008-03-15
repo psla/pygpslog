@@ -155,28 +155,29 @@ The `'C'` (Backspace) key pauses the logging operation.
 
 Logging can be started automatically on program startup (see [#SETTINGS SETTINGS]).
 
-=== Display Modes ===
-To save battery, information display is usually only active if logging is switched on.
+!PyGpsLog can store it's log files in two different formats:
+===== GPX =====
+[http://www.topografix.com/GPX GPX] is a format used by a
+[http://www.topografix.com/gpx_resources.asp lot of devices and applications], including
+[http://earth.google.com GoogleEarth], and can be easily manipulated.
+Additionally, !PyGpsLog uses it's [http://pygpslog.googlecode.com/files/gpslog.xsd own extensions]
+to store additional data for later analysis.
+===== OziExplorer =====
+[http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
+used for their `.plt` track files is very compact and by far enough to store basic
+trackpoint data.
 
-You can switch on GPS information in idle mode by pressing the `'Select'` key (or
-`'Enter'` key, joystick button).
+So, if you're low on memory use this format.
 
-The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
-between the different modes.
- # Overview - Log File Name and General GPS
- # Compass and Speed
- # Landmarks (if [#INSTALLATION installed])
- # Satellite View
- # Power saving mode (log file writing only)
+===== GPSBabel =====
+One word for [http://www.gpsbabel.org/ GPSBabel]: Depending on the information you need,
+it doesn't really matter which format you use. You can alway use
+[http://www.gpsbabel.org/ GPSBabel] to convert from one format into almost any other.
 
-The `'2'` key switches the application in full screen mode. This especially
-useful in night mode.
-
-Night and day mode can be toggled with the `'0'` key. Night mode will
-be automatically active the the application is started after 7pm or before
-5am (should be 9am, but never mind ;-) )
-
-The `'C'` (Backspace) key also freezes the GPS display.
+From [http://www.gpsbabel.org/downloads.html version 1.3.5 beta] on, GPSBabel can
+create Nokia LMX landmark files that can be sent via Bluetooth to your device. So I'm
+using it to create my Landmarks in !GoogleEarth, convert them to LMX and send them
+to my E65.
 
 === Waypoints ===
 The `'#'` key inserts a waypoint into the log file. Currently, this is done
@@ -203,6 +204,28 @@ If the Landmarks module is [#INSTALLATION installed], and the option is
 center between the start and the end of the segment, has a coverage
 radius of half the distance and intersects the end points.
 
+=== Display Modes ===
+To save battery, information display is usually only active if logging is switched on.
+
+You can switch on GPS information in idle mode by pressing the `'Select'` key (or
+`'Enter'` key, joystick button).
+
+The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
+between the different modes.
+ # Overview - Log File Name and General GPS
+ # Compass and Speed
+ # Landmarks (if [#INSTALLATION installed])
+ # Satellite View
+ # Power saving mode (log file writing only)
+
+The `'2'` key switches the application in full screen mode. This especially
+useful in night mode.
+
+Night and day mode can be toggled with the `'0'` key. Night mode will
+be automatically active the the application is started after 7pm or before
+5am (should be 9am, but never mind ;-) )
+
+The `'C'` (Backspace) key also freezes the GPS display.
 
 = SETTINGS =
 == General ==
