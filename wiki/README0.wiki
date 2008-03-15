@@ -25,7 +25,7 @@
  # [#SCREENSHOTS SCREENSHOTS]
  
 = ABOUT =
-[http://code.google.com/p/pysgpslog/ pygpslog] is a GPS logger for S60 
+[http://code.google.com/p/pygpslog/ pygpslog] is a GPS logger for S60 
 smartphones that uses Nokia's internal location and landmarks API and
 thus can co-exist with other navigation applications (e.g. Nokia Maps)
 running at the same time.
