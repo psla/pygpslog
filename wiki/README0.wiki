@@ -215,7 +215,7 @@ radius of half the distance.
  * *Max. Distance per GPS interval*: Greater jumps will be regarded as incorrect data and discarded. Increase this value in an airplane. Default: *80* m.
  * *Extended Data Format*: Logs additional data (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
  * *Log Satellites*: Log detailed satellite data (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
- * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operting mode] here. Default: Depends on your [#INSTALLATION installation].
+ * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operating mode] here. Default: Depends on your [#INSTALLATION installation].
  * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] module is [#INSTALLATION installed]. Default: *on*.
  * *Show Battery Meter in Fullscreen*: Default: *on*.
  * *Reset to default settings*: Application will exit after resetting.
