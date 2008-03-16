@@ -161,7 +161,7 @@ Logging can be started automatically on program startup (see [#SETTINGS SETTINGS
 [http://www.topografix.com/GPX GPX] is a format used by a
 [http://www.topografix.com/gpx_resources.asp lot of devices and applications], including
 [http://earth.google.com GoogleEarth], and can be easily manipulated.
-Additionally, !PyGpsLog uses it's [Screenshots#Sample_Logfiles own extensions]
+Additionally, !PyGpsLog uses it's [Screenshots#Extended_Format own extensions]
 to store additional data for later analysis.
 ===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
@@ -251,8 +251,8 @@ relative to your current heading (or view direction, when going forward).
  * *Log Format*: `GPX` or `OziExplorer`. Default: *GPX*.
  * *Min. Distance to Record*: The minimum distance in meters you have to travel, before a new trackpoint is inserted. Default: *25* m.
  * *Max. Distance per GPS interval*: Greater jumps will be regarded as incorrect data and discarded. Increase this value in an airplane. Default: *80* m.
- * *Extended Data Format*: Logs additional data (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
- * *Log Satellites*: Log detailed satellite data (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
+ * *Extended Data Format*: Logs [Screenshots#Extended_Format additional data] (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
+ * *Log Satellites*: Log [Screenshots#Satellite_Info detailed satellite data] (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
  * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operating mode] here. Default: Depends on your [#INSTALLATION installation].
  * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] module is [#INSTALLATION installed]. Default: *on*.
  * *Show Battery Meter in Fullscreen*: Default: *on*.
