@@ -20,7 +20,7 @@ if IN_EMU: reload(gpsloglm)
 try:    from e32jext import cputime, battery_status, EPoweredByBattery
 except: cputime, battery_status = None, None
 
-gpssplash.show("Loading User Icons...")
+gpssplash.show("Loading Default Icons...")
 import gpslogimg
 if IN_EMU: reload(gpslogimg)
 
@@ -159,6 +159,13 @@ class GpsLog(object):
     if self.settings.btdevice == "on":
       self.btaddr = None
       self.settings.btdevice = "off"
+    
+    gpssplash.show("Loading User icons...")
+
+    try:
+      gpslogimg.addIcons(os.path.join(self.settings.logdir, "icons"))
+    except Exception, exc:
+      appuifw.note(u"Error loading icons: %s" % str(exc), "error")
     
     gpssplash.hide()
 
@@ -1092,10 +1099,10 @@ class GpsLog(object):
       wpt = self.log.waypoint(gps)
       desc = os.path.basename(self.log.name())
     else:
-      wpt  = Waypointnt(("Landmark", gps.lat,  gps.lon,  alt,  gps.time,
-                                     gps.speed,gps.hdg,  gps.fix,
-                                     gps.hdop, gps.vdop, gps.pdop,
-                                     gps.hacc, gps.vacc, attr))
+      wpt  = Waypoint(("Landmark", gps.lat,  gps.lon,  alt,  gps.time,
+                                   gps.speed,gps.hdg,  gps.fix,
+                                   gps.hdop, gps.vdop, gps.pdop,
+                                   gps.hacc, gps.vacc, attr))
       desc = "GPS Log"
       
     if self.lmsettings.uselm and self.lmsettings.wptlm:
