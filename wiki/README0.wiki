@@ -1,5 +1,5 @@
 #summary pygpslog Documentation. Use this while README doesn't update.
-#labels Featured,Documentation
+#labels Deprecated,Documentation
 == CONTENTS ==
  # [#ABOUT ABOUT]
  # [#WHAT_S_NEW WHAT'S NEW]
