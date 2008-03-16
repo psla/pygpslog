@@ -1,5 +1,5 @@
 #summary Version Changelog. Use this while History doesn't update.
-#labels Documentation,Featured
+#labels Featured,Documentation
 
 = Version History =
 === Legend ===
