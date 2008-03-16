@@ -1,4 +1,5 @@
-#summary Version Changelog.
+#summary Version Changelog. Use this while History doesn't update.
+#labels Documentation,Featured
 
 = Version History =
 === Legend ===
@@ -10,6 +11,7 @@
 
 == 0.2.0 - Mar. 14, 2008 ==
  * + Simple Navigation (choose a destination)
+ * + Display GPS data without starting a log file.
  * + Night mode
  * + Full screen mode with battery meter
  * + CPU usage meter

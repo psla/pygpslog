@@ -38,10 +38,10 @@ It's features include
   * The usual: Data view, Satellite View, Compass View...
   * Integration with Nokia's landmarks.
 
-But best see the [README0#SCREENSHOTS Screenshots] below.
+But best see the [README#SCREENSHOTS Screenshots] below.
 
 = WHAT'S NEW =
-Please see the [History0 History] page.
+Please see the [History] page.
 
 = LICENSE =
   see [LICENSES] and [COPYING]
@@ -56,7 +56,7 @@ Please see the [History0 History] page.
   * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module (*see below!*).
   * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
 
-  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README0#INSTALLATION DOCUMENTATION]
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
 
 The !LocationRequestor module above is packaged with an UID that cannot be
 used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
@@ -71,7 +71,7 @@ from this site.
 
 In fact, the !LocationRequestor and Landmarks modules are not _absolutely_
 required to run pygpslog, but the functionality will be severely limited.
-Please see [README0#OPERATION below].
+Please see [README#OPERATION below].
 
 = CONTACT =
 Please leave your comments on the [Contact] wiki page. I will be notified by
