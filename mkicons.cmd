@@ -29,3 +29,5 @@ set SPLASHSVG=icons\full\PyGpsLog.svg
 
 convert -density 12 -background black %SPLASHSVG%             -quality 90 src\gpslog.jpg
 montage -density 12 -background black -geometry 64x64 %ICONS% -quality 90 %TILE% src\gpsloglm.jpg
+
+mkiconset.py icons\iconsets\default_Boomy src\gpslogico.jpg

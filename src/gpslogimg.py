@@ -24,14 +24,14 @@ assert len(ICONS) <= ALLICONS.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
 
 class GpsIcon(object):
 
-  def __init__(self, idx):
+  def __init__(self, image, idx):
     self.img  = Image.new(ICONSIZE)
     self.mask = Image.new(ICONSIZE,"L")
     sx, sy = ICONSIZE[0], ICONSIZE[1]
     x1, y1 = idx*2*sx % (2*ICONS_PER_ROW*sx) + sx, idx / 2 * sy
     x2, y2 = x1+sx, y1+sy
-    self.img. blit(ALLICONS, source=((x1,   y1),(x2,   y2)))
-    self.mask.blit(ALLICONS, source=((x1-64,y1),(x2-64,y2)))
+    self.img. blit(image, source=((x1,   y1),(x2,   y2)))
+    self.mask.blit(image, source=((x1-64,y1),(x2-64,y2)))
     self.alphas = {}
     self.resized = {}
     # Pre-Cache standard sizes and alpha
@@ -64,9 +64,40 @@ class GpsIcon(object):
     if drawable:
       drawable.blit(img, target=pos, mask=mask)
 
-ICONS = dict([ (name, GpsIcon(idx)) for name, idx in ICONS ])
+ICONS = dict([ (name, GpsIcon(ALLICONS, idx)) for name, idx in ICONS ])
 
 del ALLICONS
+
+##############################################################################
+def addIconModule(ico):
+  if not hasattr(ico, "ICONFILE") or not hasattr(ico, "ICONCAT"):
+    return
+  img = Image.open(os.path.join(os.path.dirname(ico.__file__), ico.ICONFILE))
+  assert len(ico.ICONCAT) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
+         "Not enough icons in image file"
+  for idx in range(len(ico.ICONCAT)):
+    ICONS[ico.ICONCAT[idx]] = GpsIcon(img, idx)
+  del img
+
+def addIcons(icondir):
+  import imp
+  try:
+    fnames = [ os.path.abspath(os.path.join(icondir, fn)) for fn in os.listdir(icondir) if fn.lower().endswith(".def") ]
+    fnames.sort()
+  except:
+    return
+    
+  for fn in fnames:
+    userico = imp.load_source("userico", fn)
+    addIconModule(userico)
+    del userico
+
+  del imp
+  
+##############################################################################
+import gpslogico
+addIconModule(gpslogico)    
+del gpslogico
 
 ##############################################################################
 # def realAlphaText(drawable, coord, text, fill=0, font=None, alpha=None, back=None):
