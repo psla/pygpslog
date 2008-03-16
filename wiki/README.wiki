@@ -165,8 +165,8 @@ Additionally, !PyGpsLog uses it's [Screenshots#Extended_Format own extensions]
 to store additional data for later analysis.
 ===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
-used for their `.plt` track files is very compact and by far enough to store basic
-trackpoint data.
+used for their `.plt` track files is very compact and by
+[Screenshots#OziExplorer far enough] to store basic trackpoint data.
 
 So, if you're low on memory use this format.
 
