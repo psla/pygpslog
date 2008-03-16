@@ -20,12 +20,44 @@ http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Landmarks-nm.jpg
 
 === Sample Logfiles ===
 
+===== Basic Info =====
+{{{
+<?xml version='1.0'?>
+
+<gpx creator="GpsLog for S60" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpslog="http://pygpslog.googlecode.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog_0_2.xsd http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <time>2008-03-16T10:53:30Z</time>
+  </metadata>
+  <trk>
+    <trkseg>
+      <trkpt lat="61.474350000" lon="23.838883333">
+        <ele>192.599991</ele>
+        <time>2005-08-12T12:57:39Z</time>
+      </trkpt>
+      <trkpt lat="61.474566667" lon="23.838683333">
+        <ele>192.599991</ele>
+        <time>2005-08-12T12:57:40Z</time>
+      </trkpt>
+...
+      <trkpt lat="61.476650000" lon="23.836050000">
+        <ele>188.899994</ele>
+        <time>2005-08-12T12:57:53Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
+<!-- Summary: -->
+<!-- Trackpoints: 12 -->
+<!-- Distance:    0.3km -->
+}}}
+
+===== Extended Format =====
 With a segment marker
 
 {{{
 <?xml version='1.0'?>
 
-<gpx creator="GpsLog for S60 (S60 Location using #Simulation)" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpslog="http://pygpslog.googlecode.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog.xsd http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<gpx creator="GpsLog for S60 (S60 Location using #Simulation)" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpslog="http://pygpslog.googlecode.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog_0_2.xsd http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <time>2008-03-05T20:48:25Z</time>
   </metadata>
@@ -83,10 +115,10 @@ With a segment marker
 <!-- Distance:    0.8km -->
 }}}
 
-With full info on
+===== Satellite Info =====
 
 {{{
-<gpx creator="GpsLog for S60 (S60 Location using Bluetooth GPS)" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpslog="http://pygpslog.googlecode.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog.xsd http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<gpx creator="GpsLog for S60 (S60 Location using Bluetooth GPS)" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpslog="http://pygpslog.googlecode.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog_0_2.xsd http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
   <metadata>
     <time>2008-03-05T20:57:08Z</time>
   </metadata>
