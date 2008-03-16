@@ -13,9 +13,10 @@
   # [#Nokia_Positioning Nokia Positioning]
  # [#USAGE USAGE]
   # [#Logging Logging]
-  # [#Display_Modes Display Modes]
   # [#Waypoints Waypoints]
   # [#Track_Segments Track Segments]
+  # [#Display_Modes Display Modes]
+  # [#Destination Destination]
  # [#SETTINGS SETTINGS]
   # [#General General]
   # [#Landmarks Landmarks]
@@ -37,10 +38,10 @@ It's features include
   * The usual: Data view, Satellite View, Compass View...
   * Integration with Nokia's landmarks.
 
-But best see the [README0#SCREENSHOTS Screenshots] below.
+But best see the [README#SCREENSHOTS Screenshots] below.
 
 = WHAT'S NEW =
-Please see the [History0 History] page.
+Please see the [History] page.
 
 = LICENSE =
   see [LICENSES] and [COPYING]
@@ -55,7 +56,7 @@ Please see the [History0 History] page.
   * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module (*see below!*).
   * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
 
-  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README0#INSTALLATION DOCUMENTATION]
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
 
 The !LocationRequestor module above is packaged with an UID that cannot be
 used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
@@ -70,7 +71,7 @@ from this site.
 
 In fact, the !LocationRequestor and Landmarks modules are not _absolutely_
 required to run pygpslog, but the functionality will be severely limited.
-Please see [README0#OPERATION below].
+Please see [README#OPERATION below].
 
 = CONTACT =
 Please leave your comments on the [Contact] wiki page. I will be notified by
@@ -160,12 +161,12 @@ Logging can be started automatically on program startup (see [#SETTINGS SETTINGS
 [http://www.topografix.com/GPX GPX] is a format used by a
 [http://www.topografix.com/gpx_resources.asp lot of devices and applications], including
 [http://earth.google.com GoogleEarth], and can be easily manipulated.
-Additionally, !PyGpsLog uses it's [http://pygpslog.googlecode.com/files/gpslog_0_2.xsd own extensions]
+Additionally, !PyGpsLog uses it's [Screenshots#Extended_Format own extensions]
 to store additional data for later analysis.
 ===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
-used for their `.plt` track files is very compact and by far enough to store basic
-trackpoint data.
+used for their `.plt` track files is very compact and by
+[Screenshots#OziExplorer far enough] to store basic trackpoint data.
 
 So, if you're low on memory use this format.
 
@@ -227,6 +228,20 @@ be automatically active the the application is started after 7pm or before
 
 The `'C'` (Backspace) key also freezes the GPS display.
 
+=== Destination ===
+!PyGpsLog provides a simple way of navigating, a little bit like Nokia's
+own Navigator application.
+
+The `Destination` menu allows you to select a destination, either from your
+landmarks (if [#INSTALLATION installed]) or as decimal coordinates.
+
+Once a destination is selected it's distance and estimated arrival time is shown
+on the Overview and Compass pages. In the landmarks list it will be shown on top.
+
+On the Compass and Satellite pages there will be two dot helping you navigate.
+A *blue* marker shows the absolute heading and a *red* marker will show heading
+relative to your current heading (or view direction, when going forward).
+
 = SETTINGS =
 == General ==
  * *Keep Backlight On*: Keeps the devices' backlight on while logging or GPS display is active. Default: *off*.
@@ -236,8 +251,8 @@ The `'C'` (Backspace) key also freezes the GPS display.
  * *Log Format*: `GPX` or `OziExplorer`. Default: *GPX*.
  * *Min. Distance to Record*: The minimum distance in meters you have to travel, before a new trackpoint is inserted. Default: *25* m.
  * *Max. Distance per GPS interval*: Greater jumps will be regarded as incorrect data and discarded. Increase this value in an airplane. Default: *80* m.
- * *Extended Data Format*: Logs additional data (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
- * *Log Satellites*: Log detailed satellite data (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
+ * *Extended Data Format*: Logs [Screenshots#Extended_Format additional data] (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
+ * *Log Satellites*: Log [Screenshots#Satellite_Info detailed satellite data] (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
  * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operating mode] here. Default: Depends on your [#INSTALLATION installation].
  * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] module is [#INSTALLATION installed]. Default: *on*.
  * *Show Battery Meter in Fullscreen*: Default: *on*.
@@ -275,9 +290,13 @@ The other menu items are still in an experimental stage, and landmark category f
  * Q: When I try to start PyGpsLog, nothing happens.
  * A: Try to install PyGpsLog to the same drive as your Python installation.
  
+ * Q: There are no icons on the landmarks page.
+ * A: Only icons for internally know categories will be shown. To do this go to Settings->Landmarks->Options->Set Icons/Categories.
+
 = SCREENSHOTS =
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
-and
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite-nm.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Compass-nm.jpg
 
 Some more [Screenshots here].
