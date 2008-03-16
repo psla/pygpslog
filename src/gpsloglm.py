@@ -186,8 +186,13 @@ if landmarks != None:
     id = db.AddLandmark(lm)
     lm.Close()
     if id and edit:
-      id = db.ShowEditDialog(id, landmarks.ELmkAll, landmarks.ELmkEditor, False)
-
+      screen = appuifw.app.screen
+      try:
+        appuifw.app.screen = "normal"
+        id = db.ShowEditDialog(id, landmarks.ELmkAll, landmarks.ELmkEditor, False)
+      finally:
+        appuifw.app.screen = screen
+      
     db.Close()
   
   def NearestLm(lat, lon, max=16, maxdist=-1.0, cat=-1):
