@@ -91,7 +91,6 @@ ICONMIF    = "myicons.mif"
 ICONDEF    = [ ("Airports", 0x4000),  ("Train Stations", 0x4002), ("Bus Terminals", 0x4004) ]
 }}}
 
-Once you're icons are loaded, go to [README#Landmarks Landmark Settings] and invoke
+Once your icons are loaded, go to [README#Landmarks Landmark Settings] and invoke
 the `Options->Set Icons/Categories` menu. All non-standard categories and their icons
 will be added to your Landmarks database.
-
