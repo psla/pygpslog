@@ -3,7 +3,6 @@ sys.path += [ "..\util" ]
 # !!! assert sys.version_info < (2,3,0), "Please run under Python 2.2!"
 
 from ensutil import setup, mergesis, findUid, findVersion
-import mkiconset
 
 appname = "PyGpsLog"
 srcdir  = "src"

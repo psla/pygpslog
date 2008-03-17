@@ -35,6 +35,7 @@ def show(msg="Loading..."):
     appuifw.app.body = __splash
     del img
   __draw()
+  e32.reset_inactivity()
   e32.ao_yield()
   # e32.ao_yield()
   
@@ -50,7 +51,8 @@ def hide():
     appuifw.app.body = __appbody
     del __splash
     __splash = None
-    
+
+  e32.reset_inactivity()
   e32.ao_yield()
 
 def savedBody():
