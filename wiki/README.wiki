@@ -201,7 +201,7 @@ If you press a different key from `'4'` to `'9'` while a segment is active,
 the current segment will be closed and a new segment opened.
 
 If the Landmarks module is [#INSTALLATION installed], and the option is
-[#Landmark_Settings activated], a Nokia landmark is added, that marks the
+[#Landmarks activated], a Nokia landmark is added, that marks the
 center between the start and the end of the segment, has a coverage
 radius of half the distance and intersects the end points.
 
