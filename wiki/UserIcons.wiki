@@ -1,4 +1,5 @@
 #summary How to create user defined icon sets.
+#labels Documentation
 
 = Why =
 Python for S60 doesn't have the option (yet) to use S60 icon files (in
