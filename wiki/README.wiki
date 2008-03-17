@@ -279,6 +279,9 @@ The options menu of the landmarks settings page contains one important menu item
 
 The other menu items are still in an experimental stage, and landmark category filtering doesn't work properly yet.
 
+Since version 0.2.1, there is also the possibility to add [UserIcons user defined icon sets],
+for new landmark categories or non-english versions of S60.
+
 = TROUBLESHOOTING =
 == Known Problems ==
  * When using an external Bluetooth GPS, logfiles are closed, if the Bluetooth connection is lost.
