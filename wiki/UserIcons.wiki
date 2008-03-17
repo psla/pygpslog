@@ -1,0 +1,43 @@
+#summary Howto create user defined icon sets.
+
+= Why =
+
+Python for S60 doesn't have the option (yet) to use S60 icon files (in
+.mif or .mbm format, for you experts out there) for drawing the graphics
+in them.
+
+So, finding the pure text landmarks list a little bit dull, i created some
+JPEG files to be displayed on the list. Unfortunately, those icons don't
+really match Nokia's but so what...
+
+The next problem is that the pre-installed icons and category names probably
+don't match the names on your non-English device.
+
+= How =
+
+=== The Landmarks List ===
+
+This is fairly simple. All you need is a JPEG or PNG file with your icons and
+their transparency masks. Icons and their masks must be 64 x 64 pixels in size,
+each row of the image contains two pairs of mask and icon. Masks may either be
+black and white or gray scale, with white marking the opaque parts. It should
+look like this:
+
+http://pygpslog.googlecode.com/svn/trunk/src/gpslogico.jpg
+
+You then need a definition file to describe the categories for the icons. Suppose you
+name the above JPEG `'myicons.jpg'` you will have a definition file `'myicons.def'`
+(the name _must_ end with `'.def'`), that looks like this:
+
+{{{
+ICONFILE   = "myicons.jpg"
+ICONDEF    = [ "Accomodation",  "Businesses",    "Telecommunicat.",
+               "Education",     "Entertainment", "Food & drink",
+               "Geographical locat.", "Outdoor activities", "People",
+               "Public services", "Places of worship", "Shopping",
+               "Sightseeing", "Sports", "Transport", "User" ]
+}}}
+
+You simply create a directory `'icons'` in your log file directory (see
+[README#SETTINGS SETTINGS]), using your favorite S60 file manager or Bluetooth tool,
+and copy the two files there. Voilà!
