@@ -1,22 +1,21 @@
 #summary Howto create user defined icon sets.
 
 = Why =
-
 Python for S60 doesn't have the option (yet) to use S60 icon files (in
 .mif or .mbm format, for you experts out there) for drawing the graphics
-in them.
+contained in them.
 
 So, finding the pure text landmarks list a little bit dull, i created some
 JPEG files to be displayed on the list. Unfortunately, those icons don't
 really match Nokia's but so what...
 
 The next problem is that the pre-installed icons and category names probably
-don't match the names on your non-English device.
+don't match the names on your non-English device. So you might create your own
+to match them. If somebody would send me a S60 phone in their language,
+I'd even be prepared to do it for them ;-)
 
 = How =
-
-=== The Landmarks List ===
-
+=== The Landmarks List in !PyGpsLog ===
 This is fairly simple. All you need is a JPEG or PNG file with your icons and
 their transparency masks. Icons and their masks must be 64 x 64 pixels in size,
 each row of the image contains two pairs of mask and icon. Masks may either be
@@ -41,3 +40,58 @@ ICONDEF    = [ "Accomodation",  "Businesses",    "Telecommunicat.",
 You simply create a directory `'icons'` in your log file directory (see
 [README#SETTINGS SETTINGS]), using your favorite S60 file manager or Bluetooth tool,
 and copy the two files there. Voilà!
+
+There is even a little script,
+[http://code.google.com/p/pygpslog/source/browse/trunk/mkiconset.py mkiconset.py] in
+the source distribution that can do this for you, but you'll probably have to
+be little bit Python-literate as you'll have to change it to match your
+installation. It requires to have a fairly recent version of
+[http://www.imagemagick.org/ ImageMagick] installed.
+
+=== Nokia's Landmarks Database ===
+If you want to add your own categories with your own icons, things get a little bit
+more complicated. Again that little script, 
+[http://code.google.com/p/pygpslog/source/browse/trunk/mkiconset.py mkiconset.py], may
+help you. But you have to have one of
+[http://www.forum.nokia.com/info/sw.nokia.com/id/4a7149a5-95a5-4726-913a-3c6f21eb65a5/S60-SDK-0616-3.0-mr.html Nokia's S60 Platform SDKs]
+installed to convert your images to MBM or MIF format.
+
+So suppose you've created your own MBM file, and it contains the icons and masks
+starting with index `1` for the first icon, index `2` for the first mask, and so on,
+then you just change your `'myicons.def'` from above to:
+
+{{{
+ICONFILE   = "myicons.jpg"
+ICONMIF    = "myicons.mbm"
+ICONDEF    = [ "Accomodation",  "Businesses",    "Telecommunicat.",
+               "Education",     "Entertainment", "Food & drink",
+               "Geographical locat.", "Outdoor activities", "People",
+               "Public services", "Places of worship", "Shopping",
+               "Sightseeing", "Sports", "Transport", "User" ]
+}}}
+And copy the `'myicons.mbm'` to your icon directory, too.
+
+If your MBM file has shifted indices `'myicons.def'` might look like this:
+
+{{{
+ICONFILE   = "myicons.jpg"
+ICONMIF    = "myicons.mbm"
+ICONDEF    = [ "Accomodation",  "Businesses",    ("Telecommunicat.", 42, 43),
+               "Education",     "Entertainment", "Food & drink",
+               "Geographical locat.", "Outdoor activities", "People",
+               "Public services", "Places of worship", "Shopping",
+               "Sightseeing", "Sports", "Transport", ("User", 69, 70) ]
+}}}
+
+If you created a MIF file from SVG drawings, it might look like this:
+
+{{{
+ICONFILE   = "myicons.jpg"
+ICONMIF    = "myicons.mif"
+ICONDEF    = [ ("Airports", 0x4000),  ("Train Stations", 0x4002), ("Bus Terminals", 0x4004) ]
+}}}
+
+Once you're icons are loaded, go to [README#Landmarks Landmark Settings] and invoke
+the `Options->Set Icons/Categories` menu. All non-standard categories and their icons
+will be added to your Landmarks database.
+
