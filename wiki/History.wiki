@@ -9,6 +9,13 @@
 
 ~ Changed functionality
 
+== 0.2.1 - Mar. 17, 2008 ==
+ * + Support for UserIcons in landmarks
+ * - Fixed slow application loading.
+ * - Don't show average speed if logfile is closed
+ * - Switch to normal screen on landmark edit (may crash Python).
+ * ~ Lowered the icon quality to reduce installed size.
+
 == 0.2.0 - Mar. 14, 2008 ==
  * + Simple Navigation (choose a destination)
  * + Display GPS data without starting a log file.
