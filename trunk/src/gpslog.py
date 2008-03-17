@@ -20,9 +20,16 @@ if IN_EMU: reload(gpsloglm)
 try:    from e32jext import cputime, battery_status, EPoweredByBattery
 except: cputime, battery_status = None, None
 
-gpssplash.show("Loading Default Icons...")
+gpssplash.show("Loading Default Icons.")
 import gpslogimg
 if IN_EMU: reload(gpslogimg)
+gpssplash.show("Loading Default Icons..")
+import gpslogico
+if IN_EMU: reload(gpslogico)
+gpssplash.show("Loading Default Icons...")
+gpslogimg.addIconModule(gpslogico)    
+del gpslogico
+
 
 gpssplash.show("Loading GPS modules...")
 try:    from gpslib.gpspos import PositioningProvider
@@ -167,6 +174,9 @@ class GpsLog(object):
     except Exception, exc:
       appuifw.note(u"Error loading icons: %s" % str(exc), "error")
     
+    if self.lmsettings.uselm:
+      gpsloglm.addUserIcons(gpslogimg.ICONS)
+
     gpssplash.hide()
 
     try:
@@ -750,10 +760,21 @@ class GpsLog(object):
     #----------------------------------------------------------------------
     elif dispmode == DISP_LANDMARK and self.lmsettings.uselm:
       hl   = -self.view.measure_text(u"M", bold)[0][1] + 3
-      line = hl
-      ucol = w/4 - 2
-      dcol = w/3 + 16
-      icol = dcol - 16
+      smico = self.lmsettings.smico
+      
+      
+      if smico:
+        line = hl
+        ucol = w/4 - 2
+        dcol = w/3 + 16
+        icol = dcol - 16
+      else:
+        hl = hl * 5 / 2
+        line = hl + 2
+        ucol = hl * 2
+        dcol = ucol
+        icol = 2
+      
       fnt, bld = font, bold
       if w < 210: font, bld = small, font
       
@@ -764,9 +785,13 @@ class GpsLog(object):
         if d < 1000: d = "%7.f" % d; unit = "m"
         else:        d = "%7.1f" % (d / 1000); unit = "km"
 
+        if not smico: line -= hl / 2
+        
         dd = self.view.measure_text(unicode(d), fnt)[0][2]
         prnt(ucol-dd-3, line, d, fnt)
         prnt(ucol,      line, unit, fnt)
+        
+        if not smico: line += hl / 2
         
         name = wpt.name
         try:
@@ -793,7 +818,7 @@ class GpsLog(object):
         try:
           if self.nearest: return # probably still in use
           nearest = gpsloglm.NearestLm(lat, lon,
-                                       max=h/hl-1, maxdist=self.lmsettings.radius*1000.0,
+                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0,
                                        cat=self.lmsettings.dispcat)
           if self.dest:  nearest = [ (self.dest, None) ] +nearest
           self.nearest = nearest
@@ -817,7 +842,7 @@ class GpsLog(object):
 
           for lm in self.nearest:
             icon(lm, img)
-            if line + hl > h - hl:
+            if line >= h - 30:
               break
         
           line = saveline
@@ -825,7 +850,7 @@ class GpsLog(object):
 
           for lm in self.nearest:
             show(lm)
-            if line + hl > h - hl:
+            if line >= h - 30:
               break
         else: # just clear the screen and redraw the name and time area
           clearBottom()
@@ -856,7 +881,7 @@ class GpsLog(object):
 
     self.cpuGraph(None)
 
-    if not self.lmsettings.uselm:
+    if not self.lmsettings.uselm or self.lmsettings.lmico in [False, "off"]:
       return # temporarily disabled
       
     gps = self.gps

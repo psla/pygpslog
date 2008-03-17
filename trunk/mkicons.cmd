@@ -27,7 +27,8 @@ set ICONS=%ICONS:/c16=icons\full\gpslog_sp_mask.svg%
 set SPLASHSVG=icons\full\PyGpsLog.svg
 
 
-convert -density 12 -background black %SPLASHSVG%             -quality 90 src\gpslog.jpg
-montage -density 12 -background black -geometry 64x64 %ICONS% -quality 90 %TILE% src\gpsloglm.jpg
+convert -density 12 -background black %SPLASHSVG%             -quality 80 src\gpslog.jpg
+montage -density 12 -background black -geometry 64x64 %ICONS% -quality 75 %TILE% src\gpsloglm.jpg
 
-mkiconset.py icons\iconsets\default_Boomy src\gpslogico.jpg
+mkiconset.py icons\iconsets\default src\gpslogico.jpg src\gpslogico
+del src\gpslogico.mif

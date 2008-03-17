@@ -269,10 +269,10 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
  * *Notify Near Category*: Shows a notification (no audio yet) when you reach landmarks of a this category. Default: *(None)*.
  * *Distance for Notification*: Show the notification when closer. Default: *25* m
  * *Update Interval*: Refresh the landmarks page only after this interval. Default: *3* sec.
+ * *Use Small Icons*: Default: *off*.
  
 These settings are for experimental features:
- * *Show Landmark Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
- * *Use Small Icons*: Default: *off*.
+ * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
 
 The options menu of the landmarks settings page contains one important menu item:
  * *Set Icons/Categories*: This inserts the default Categories in Nokias landmarks database and sets the icons for Landmarks in these categories. *Repeat this step* if you imported landmarks from another device or PC.

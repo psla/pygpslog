@@ -24,7 +24,7 @@ assert len(ICONS) <= ALLICONS.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
 
 class GpsIcon(object):
 
-  def __init__(self, image, idx):
+  def __init__(self, image, idx, miffile=None, mifidx=None, mifmask=None):
     self.img  = Image.new(ICONSIZE)
     self.mask = Image.new(ICONSIZE,"L")
     sx, sy = ICONSIZE[0], ICONSIZE[1]
@@ -35,10 +35,13 @@ class GpsIcon(object):
     self.alphas = {}
     self.resized = {}
     # Pre-Cache standard sizes and alpha
-    for a in DEFALPHA:
-      for sz in [ ICONSIZE, (ICONSIZE[0]/2,ICONSIZE[1]/2), (ICONSIZE[0]/4,ICONSIZE[1]/4) ]:
-        self.draw(None, (0,0), sz, a)
-        
+    # for a in DEFALPHA:
+    #   for sz in [ ICONSIZE, (ICONSIZE[0]/2,ICONSIZE[1]/2), (ICONSIZE[0]/4,ICONSIZE[1]/4) ]:
+    #     self.draw(None, (0,0), sz, a)
+    self.miffile = miffile
+    self.mifidx  = mifidx
+    self.mifmask = mifmask
+
   def alphaMask(self, a=None, size=ICONSIZE):
     if a == None:               return self.alphas[(DEFALPHA[0],size)]
     if (a,size) in self.alphas: return self.alphas[(a,size)]
@@ -64,19 +67,39 @@ class GpsIcon(object):
     if drawable:
       drawable.blit(img, target=pos, mask=mask)
 
+  def mifIcon(self):
+    if self.miffile == None:
+      return None
+    return (self.miffile, self.mifidx, self.mifmask)
+
 ICONS = dict([ (name, GpsIcon(ALLICONS, idx)) for name, idx in ICONS ])
 
 del ALLICONS
 
 ##############################################################################
 def addIconModule(ico):
-  if not hasattr(ico, "ICONFILE") or not hasattr(ico, "ICONCAT"):
+  if not hasattr(ico, "ICONFILE") or not hasattr(ico, "ICONDEF"):
     return
-  img = Image.open(os.path.join(os.path.dirname(ico.__file__), ico.ICONFILE))
-  assert len(ico.ICONCAT) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
+  icopath = os.path.dirname(ico.__file__)
+  img = Image.open(os.path.join(icopath, ico.ICONFILE))
+  assert len(ico.ICONDEF) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
          "Not enough icons in image file"
-  for idx in range(len(ico.ICONCAT)):
-    ICONS[ico.ICONCAT[idx]] = GpsIcon(img, idx)
+  for idx in range(len(ico.ICONDEF)):
+    icodef = ico.ICONDEF[idx]
+    if type(icodef) in [list, tuple]:
+      if len(icodef) < 3: icodef = icodef + (None,)
+    else:
+      icodef = (icodef, None, None)
+    iconame, mifidx, mifmask = icodef
+    if iconame in ICONS: del ICONS[iconame]
+    if hasattr(ico, "ICONMIF") and os.path.exists(os.path.join(icopath, ico.ICONMIF)):
+      miffile = os.path.abspath(os.path.join(icopath, ico.ICONMIF))
+      if mifidx  == None: mifidx  = idx * 2
+      if mifmask == None: mifmask = mifidx + 1
+    else:
+      miffile, mifidx, mifmask = [None]*3
+
+    ICONS[iconame] = GpsIcon(img, idx, miffile, mifidx, mifmask)
   del img
 
 def addIcons(icondir):
@@ -94,11 +117,6 @@ def addIcons(icondir):
 
   del imp
   
-##############################################################################
-import gpslogico
-addIconModule(gpslogico)    
-del gpslogico
-
 ##############################################################################
 # def realAlphaText(drawable, coord, text, fill=0, font=None, alpha=None, back=None):
   # text = unicode(text)

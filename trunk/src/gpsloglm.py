@@ -13,7 +13,8 @@ if landmarks != None:
 
   ICONDIR  = r"C:\Data\Others" # (not e32.in_emulator() and str(os.path.split(appuifw.app.full_name())[0])) or "C:\Python"
   ICONFILE = unicode(os.path.join(ICONDIR,"gpsloglm_%s.mif" % appuifw.app.uid()))
-  MKICON   = lambda ico: appuifw.Icon(ICONFILE, ico, ico)
+  #MKICON   = lambda ico: appuifw.Icon(ICONFILE, ico, ico)
+  MKICON   = lambda ico: appuifw.Icon(*ico)
   
   def findIcons(): # really: Install icons ;-)
     mydir = "." # str(os.path.split(appuifw.app.full_name())[0])
@@ -21,8 +22,9 @@ if landmarks != None:
     if not os.path.exists(srcicon):
       srcicon = os.path.join(os.path.dirname(__file__), "gpsloglm.mif")
     # if e32.in_emulator(): mydir = r"C:\Python"
-    import shutil
-    shutil.copy2(srcicon, ICONFILE)
+    if not os.path.exists(ICONFILE) or os.stat(srcicon).st_mtime > os.stat(ICONFILE).st_mtime:
+      import shutil
+      shutil.copy2(srcicon, ICONFILE)
 
   findIcons()
   
@@ -31,12 +33,20 @@ if landmarks != None:
     ("Speed 30", 0x4002), ("Speed 50", 0x4004), ("Speed 60",  0x4006),
     ("Speed 70", 0x4008), ("Speed 80", 0x400A), ("Speed 100", 0x400C),
   ]
-  ICONS    = dict([ (n, id) for n, id in ICON_DEF ])
+  ICONS    = dict([ (n, (ICONFILE, id, id)) for n, id in ICON_DEF ])
 
   WPT_LM_ATTR = 0x003F & ~(landmarks.EDescription)
                 # landmarks.EAllAttributes &~... makes API panic (and app terminate)!
   
   waypointCache = {}
+
+  def addUserIcons(icons):
+    global ICON_DEF, ICONS
+    for name in icons:
+      ico = icons[name].mifIcon()
+      if ico != None:
+        ICON_DEF += [ (name, None) ]
+        ICONS[name] = ico
 
   def OpenDb(uri=LANDMARK_DB, create=False):
     if uri != None:
@@ -80,7 +90,7 @@ if landmarks != None:
     c   = landmarks.CreateLandmarkCategory()
     c.SetCategoryName(unicode(name))
     if icon != None and type(icon) != tuple:
-      icon = (ICONFILE, ICONS[icon], ICONS[icon])
+      icon = ICONS[icon]
     if icon != None:
       c.SetIcon(*icon)
     db  = OpenDb()
@@ -241,9 +251,10 @@ if landmarks != None:
         (("warncat", "Notify near Category"), "combo",  wptnames , u"(None)"),
         (("warnrad", "Distance for Notfication"), "number",  [] , 25),
         (("upd",     "Update interval (s)"), "number",   [], 3),
-        (("lmico",   "Show Landmark Icons"), "combo",   [u"on", u"off"], u"off"),
         (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
-        (("dispcat", "Display Categories", True), "text",   [], u"[]"),
+        (("lmico",   "Show Nokia Icons"), "combo",   [u"on", u"off"], u"off"),
+       #(("dispcat", "Display Categories", True), "text",   [], u"[]"),
+        (("dispcat", "Display Categories", True), "text",   [], u"None"),
       ]
       self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico" ]
     
