@@ -9,7 +9,8 @@
 
 ~ Changed functionality
 
-== 0.2.1 - Mar. 17, 2008 ==
+== ~~0.2.1 - Mar. 17, 2008~~ ==
+*Revoked due to a bad segment marking bug*
  * + Support for UserIcons in landmarks
  * - Fixed slow application loading.
  * - Don't show average speed if logfile is closed
