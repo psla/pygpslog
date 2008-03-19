@@ -61,12 +61,13 @@ Please see the [History] page.
 The !LocationRequestor module above is packaged with an UID that cannot be
 used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
 process. Therefore I'm making a 
-[http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis re-packaged version]
+[http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+LocationRequestor re-packaged version]
 available here.
 
 Unfortunately, the Landmarks module, as of Mar. 7, 2008, contains a
 few bugs that prevent it from working with pygpslog. Until I receive word
-from the authors, you may download a [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis patched version]
+from the authors, you may download a
+[http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+Landmarks patched version]
 from this site.
 
 In fact, the !LocationRequestor and Landmarks modules are not _absolutely_
@@ -80,8 +81,8 @@ e-mail automagically ;-)
 = INSTALLATION =
  # Install Python for S60 from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
  # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
- # Get the [http://pygpslog.googlecode.com/files/LocationReq_3rd_unsigned.sis LocationRequestor] module.
- # Get the [http://pygpslog.googlecode.com/files/Landmarks_3rd_unsigned.sis Landmarks] module.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+LocationRequestor LocationRequestor] module.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+Landmarks Landmarks] module.
  # Get the [http://code.google.com/p/pygpslog/downloads/list?q=label:Featured latest version] of pygpslog.
  # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
  # Sign !LocationRequestor, Landmarks and !PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
@@ -90,8 +91,8 @@ e-mail automagically ;-)
  
 Almost: I'd strongly recommend you to download, sign, and install those additional three modules:
  * [http://prdownloads.sourceforge.net/pyed/envy_3rd_1_0_4_unsigned.sis?download envy]. Read [http://discussion.forum.nokia.com/forum/showthread.php?t=122897&highlight=envy this post] for a description.
- * [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] from this site, and
- * [http://cyke64.googlepages.com/uitricks_unsigned.SIS uitricks] from [http://cyke64.googlepages.com cyke64's pys60 page].
+ * [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] from this site, and
+ * [http://uikludges.googlecode.com/svn/trunk/uikludges.SIS uikludges] from [http://code.google.com/p/uikludges/].
  These three modules give you additional features like a CPU graph, more meaningful dialog menus and prevent pygpslog from being accidentally closed by pressing the red key.
 
 I know the signing process is tedious, but this application requires `Location`
@@ -186,7 +187,7 @@ by inserting a named trackpoint into the GPX file. For !OziExplorer files,
 this doesn't have any effect in this version.
 
 If the Landmarks module is [#INSTALLATION installed], and the option is
-[#Landmark_Settings activated], a Nokia landmark with the current time stamp
+[#Landmarks activated], a Nokia landmark with the current time stamp
 is added.
 
 === Track Segments ===
@@ -254,7 +255,7 @@ relative to your current heading (or view direction, when going forward).
  * *Extended Data Format*: Logs [Screenshots#Extended_Format additional data] (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
  * *Log Satellites*: Log [Screenshots#Satellite_Info detailed satellite data] (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
  * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operating mode] here. Default: Depends on your [#INSTALLATION installation].
- * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://pygpslog.googlecode.com/files/e32jext_unsigned.sis e32jext] module is [#INSTALLATION installed]. Default: *on*.
+ * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] module is [#INSTALLATION installed]. Default: *on*.
  * *Show Battery Meter in Fullscreen*: Default: *on*.
  * *Reset to default settings*: Application will exit after resetting.
 
