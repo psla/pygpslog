@@ -305,7 +305,7 @@ class GpxLogfile(GpsLogfile):
        "xmlns:xsi":          "http://www.w3.org/2001/XMLSchema-instance",
        "xmlns":              "http://www.topografix.com/GPX/1/1",
        "xmlns:gpslog":       "http://pygpslog.googlecode.com",
-       "xsi:schemaLocation": "http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog_0_2.xsd "\
+       "xsi:schemaLocation": "http://pygpslog.googlecode.com http://pygpslog.googlecode.com/files/gpslog_0_3.xsd "\
                              "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd",
       })
   

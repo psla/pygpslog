@@ -3,7 +3,7 @@ from   calendar import timegm
 
 sys.path += [ os.path.join(os.path.dirname(__file__), "../src") ]
 
-from gpslogutil import midpoint, distance
+from gpslogutil import midpoint, distance, bearing
 try:      import cElementTree as ET, elementtree.ElementTree as _ET
 except:
   try:    import elementtree.ElementTree as ET, elementtree.ElementTree as _ET
@@ -163,6 +163,9 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
         
       return i
       
+    mark = tpts[0].find("extensions/{%s}mark"%MY_NS)
+    directional = (mark != None and mark.get("directional") == "true")
+
     r = distance(coor(tpts[0]), coor(tpts[-1]))/2.0
     if maxrad != None and r > maxrad:
       maxdist = r/(int(r/maxrad)+1)*2
@@ -187,11 +190,11 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
         desc     = name + " - " + desc.strip()
       if ctr: desc += " - %d" % ctr
       lm = ET.SubElement(coll, "{%s}landmark"%LMX_NS)
-      nm = ET.SubElement(lm,   "{%s}name"%LMX_NS);
+      nm = ET.SubElement(lm,   "{%s}name"%LMX_NS)
       nm.text = desc
-      co = ET.SubElement(lm,   "{%s}coordinates"%LMX_NS);
-      la = ET.SubElement(co,   "{%s}latitude"%LMX_NS);
-      lo = ET.SubElement(co,   "{%s}longitude"%LMX_NS);
+      co = ET.SubElement(lm,   "{%s}coordinates"%LMX_NS)
+      la = ET.SubElement(co,   "{%s}latitude"%LMX_NS)
+      lo = ET.SubElement(co,   "{%s}longitude"%LMX_NS)
       la.text, lo.text = "%f" % lat, "%f" % lon
       al = tpts[len(tpts)/2].findtext("ele")
       if al != None: ET.SubElement(co,   "{%s}altitude"%LMX_NS).text=al
@@ -199,8 +202,14 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
       if acc!= None: ET.SubElement(co,   "{%s}horizontalAccuracy"%LMX_NS).text=acc
       acc= tpts[len(tpts)/2].findtext("extensions/{%s}vacc"%MY_NS)
       if acc!= None: ET.SubElement(co,   "{%s}verticalAccuracy"%LMX_NS).text=acc
-      cr = ET.SubElement(lm,   "{%s}coverageRadius"%LMX_NS);
+      cr = ET.SubElement(lm,   "{%s}coverageRadius"%LMX_NS)
       cr.text = "%.1f" % rad
+      if directional:
+        ai = ET.SubElement(lm, "{%s}addressInfo"%LMX_NS)
+        # HACK ALERT:  lmx format doesn't allow for import or export of heading
+        di = ET.SubElement(ai, "{%s}phoneNumber"%LMX_NS)
+        di.text = "hdg:%d" % int(bearing(pt1, pt2))
+        ai.tail = "\n      "
       for cat in [ name ] + addtlCat:
         ca = ET.SubElement(lm,   "{%s}category"%LMX_NS);
         cn = ET.SubElement(ca,   "{%s}name"%LMX_NS);
@@ -287,7 +296,9 @@ def synthesizeDate(gpx, filename):
   ts = isoformat(timegm(time.strptime("".join(sp[1:])+"UTC", "%Y%m%d%H%M%S%Z")))
   gpx.find("metadata/time").text = ts
 
-
+def synthesizeDirection(gpx, force=False):
+  pass
+  
 def loadGpx(fn, postprocess=True):
   gpx = ET.parse(fn)
   root = gpx.getroot()
@@ -314,6 +325,7 @@ def extractBabelPath(fn, fmt="kml"):
     fixTime(gpx)
     addCenters(gpx)
     synthesizeNames(gpx)
+    synthesizeDirection(gpx, force=(fmt=="lmx"))
     return gpx
   finally:
     os.remove(tmpfn)
