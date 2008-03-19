@@ -14,9 +14,10 @@ ICONSIZE      = (64,64)
 ICONS_PER_ROW = 2
 ALLICONS      = Image.open(os.path.join(thisdir, ALLICONS))
 DEFALPHA      = [ 0x7f7f7f, 0x1f1f1f ]
-ICONS         = [ "Default",  "Speed 30", "Speed 50", "Speed 60", "Speed 70",
+ICONCAT       = [ "Default",  "Speed 30", "Speed 50", "Speed 60", "Speed 70",
                   "Speed 80", "Speed 100" ]
-ICONS         = [ (ICONS[idx], idx) for idx in range(len(ICONS)) ]
+ICONS         = [ (ICONCAT[idx], idx) for idx in range(len(ICONCAT)) ]
+MARKERS       = ICONCAT[1:]
 
 assert len(ICONS) <= ALLICONS.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
        "Not enough icons in image file"
@@ -84,6 +85,11 @@ def addIconModule(ico):
   img = Image.open(os.path.join(icopath, ico.ICONFILE))
   assert len(ico.ICONDEF) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
          "Not enough icons in image file"
+  if hasattr(ico, "MARKERS"):
+    global MARKERS
+    MARKERS = ico.MARKERS[:]
+    assert len(MARKERS) == 6, "MARKERS must have exactly 6 elements"
+
   for idx in range(len(ico.ICONDEF)):
     icodef = ico.ICONDEF[idx]
     if type(icodef) in [list, tuple]:
