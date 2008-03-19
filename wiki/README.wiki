@@ -279,9 +279,6 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
  * *Update Interval*: Refresh the landmarks page only after this interval. Default: *3* sec.
  * *Use Small Icons*: Default: *off*.
 
-An audible alarm can be played on notification by copying a sound file
-named `'alarm.aac'` to your [#General configured] log directory.
- 
 These settings are for experimental features:
  * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
 
@@ -292,6 +289,10 @@ The other menu items are still in an experimental stage, and landmark category f
 
 Since version 0.2.1, there is also the possibility to add [UserIcons user defined icon sets],
 for new landmark categories or non-english versions of S60.
+
+An audible alarm can be played on notification by copying a sound file
+named `'alarm.aac'` to your [#General configured] log directory.
+ 
 
 = TROUBLESHOOTING =
 == Known Problems ==
