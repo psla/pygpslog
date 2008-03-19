@@ -89,11 +89,12 @@ e-mail automagically ;-)
  # Install to your device
  # Done!
  
-Almost: I'd strongly recommend you to download, sign, and install those additional three modules:
+Almost: I'd strongly recommend you to download, sign, and install those additional modules:
+ * [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] from this site.
  * [http://prdownloads.sourceforge.net/pyed/envy_3rd_1_0_4_unsigned.sis?download envy]. Read [http://discussion.forum.nokia.com/forum/showthread.php?t=122897&highlight=envy this post] for a description.
- * [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] from this site, and
  * [http://uikludges.googlecode.com/svn/trunk/uikludges.SIS uikludges] from [http://code.google.com/p/uikludges/].
- These three modules give you additional features like a CPU graph, more meaningful dialog menus and prevent pygpslog from being accidentally closed by pressing the red key.
+ * [http://pdis.hiit.fi/pdis/download/miso/miso-1.92-s60_3rd_dev.sis miso] from [http://pdis.hiit.fi/pdis/download/miso/] or [http://cyke64.googlepages.com/misty150_unsigned_dev_certfree.SIS misty] from [http://cyke64.googlepages.com/].
+ These modules give you additional features like a CPU graph, more meaningful dialog menus, vibrating alarm and prevent pygpslog from being accidentally closed by pressing the red key.
 
 I know the signing process is tedious, but this application requires `Location`
 capabilities (`SwEvent` might be needed later). To make things worse,
@@ -206,6 +207,11 @@ If the Landmarks module is [#INSTALLATION installed], and the option is
 center between the start and the end of the segment, has a coverage
 radius of half the distance and intersects the end points.
 
+By default these landmarks are directional, i.e. notifications only take
+place if you're going roughly in the same direction as the landmark.
+If you want to change this, you have to [extractmarks extract and edit]
+the segments then write the landmarks back to the device.
+
 === Display Modes ===
 To save battery, information display is usually only active if logging is switched on.
 
@@ -267,10 +273,14 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
  * *Category for Waypoints*: New [#Waypoints waypoints] will be assigned this category by default. Default: *(None)*.
  * *Store Markers as Landmarks*: Inserts a landmark for [#Track_Segments track segment] markers. Default: *on*.
  * *Landmark Search Radius*: Landmarks further away will not be displayed on the landmarks page. Increasing this may _significantly_ slow down the application. Default: *10* km.
- * *Notify Near Category*: Shows a notification (no audio yet) when you reach landmarks of a this category. Default: *(None)*.
+ * *Notify Near Category*: Shows a notification when you reach landmarks of a this category. Default: *(None)*.
  * *Distance for Notification*: Show the notification when closer. Default: *25* m
+ * *Vibrate on Notification*: Only working if `miso` or `misty` modules are [#INSTALLATION installed]. Default: *on*.
  * *Update Interval*: Refresh the landmarks page only after this interval. Default: *3* sec.
  * *Use Small Icons*: Default: *off*.
+
+An audible alarm can be played on notification by copying a sound file
+named `'alarm.aac'` to your [#General configured] log directory.
  
 These settings are for experimental features:
  * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
@@ -292,10 +302,10 @@ for new landmark categories or non-english versions of S60.
 
 == FAQ ==
  * Q: My Battery drains very rapidly!
- * A: If you only want to log your GPS track, switch to Powersave mode. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`.
+ * A: First, [#General switch the backlight off]. If you only want to log your GPS track, switch to [#Display_Modes Powersave mode]. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`.
  
- * Q: When I try to start PyGpsLog, nothing happens.
- * A: Try to install PyGpsLog to the same drive as your Python installation.
+ * Q: When I try to start !PyGpsLog, nothing happens.
+ * A: Try to install !PyGpsLog to the same drive as your Python installation.
  
  * Q: There are no icons on the landmarks page.
  * A: Only icons for internally known categories will be shown. To do this go to Settings->Landmarks->Options->Set Icons/Categories.
