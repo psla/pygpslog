@@ -12,6 +12,7 @@ else:                                      timegm = time.mktime
 GPX11_NS   = "http://www.topografix.com/GPX/1/1"
 GPSLOG_NS  = "http://pygpslog.googlecode.com"
 KML21_NS   = "http://earth.google.com/kml/2.1"
+KML22_NS   = "http://earth.google.com/kml/2.2"
 
 IS_DST           = (time.localtime().tm_isdst == 1)
   
@@ -59,7 +60,7 @@ class XMLData(object):
     },
     "time":    ("time", isoparse),
     "sattime": ("time", isoparse),
-    "namespace": GPX11_NS
+    "namespaces": GPX11_NS
   }
   BABELKML_MAP = {
     "root":   "kml",
@@ -77,7 +78,7 @@ class XMLData(object):
     "satmap": None,
     "time":    ("TimeStamp/when", isoparse),
     "sattime": ("TimeStamp/when", isoparse),
-    "namespace": KML21_NS
+    "namespaces": [ KML21_NS, KML22_NS ]
   }
   MAPS    = { "gpx": GPX_MAP, "kml": BABELKML_MAP }
 
@@ -87,6 +88,8 @@ class XMLData(object):
     self.ext = os.path.splitext(fname)[1][1:]
     if map != None: self.map = map
     else: self.map = ( self.ext in XMLData.MAPS and XMLData.MAPS[self.ext]) or XMLData.GPX_MAP
+    if type(self.map["namespaces"]) not in [list, tuple]:
+      self.map["namespaces"] = [ self.map["namespaces"] ]
     # self.__killNs()
     # self.records = self.xml.findall(self.map["record"])
     self.context = None
@@ -100,7 +103,8 @@ class XMLData(object):
   def __killNs(self, elt=None):
     if elt == None: elt = self.rec
     for e in [elt] + elt.findall(".//*"):
-      e.tag = e.tag.replace("{"+self.map["namespace"]+"}", "")
+      for ns in self.map["namespaces"]:
+        e.tag = e.tag.replace("{"+ns+"}", "")
     
   def close(self):
     if self.rec:
