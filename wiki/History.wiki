@@ -1,4 +1,4 @@
-#summary Version Changelog. Use this while History doesn't update.
+#summary Version Changelog.
 #labels Featured,Documentation
 
 = Version History =
@@ -9,8 +9,12 @@
 
 ~ Changed functionality
 
+== 0.2.2 - Mar. 18, 2008 ==
+ * + Added support for [extractmarks directional track segments]
+ * - Fixed a bug that caused wrong categories for track segments
+ 
 == ~~0.2.1 - Mar. 17, 2008~~ ==
-*Revoked due to a bad segment marking bug*
+*Revoked due to a bad track segment marking bug*
  * + Support for UserIcons in landmarks
  * - Fixed slow application loading.
  * - Don't show average speed if logfile is closed

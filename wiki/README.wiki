@@ -291,11 +291,14 @@ for new landmark categories or non-english versions of S60.
  * _A lot_ of unhandled exceptions... Most of them will only be visible on program close.
 
 == FAQ ==
+ * Q: My Battery drains very rapidly!
+ * A: If you only want to log your GPS track, switch to Powersave mode. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`.
+ 
  * Q: When I try to start PyGpsLog, nothing happens.
  * A: Try to install PyGpsLog to the same drive as your Python installation.
  
  * Q: There are no icons on the landmarks page.
- * A: Only icons for internally know categories will be shown. To do this go to Settings->Landmarks->Options->Set Icons/Categories.
+ * A: Only icons for internally known categories will be shown. To do this go to Settings->Landmarks->Options->Set Icons/Categories.
 
 = SCREENSHOTS =
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
