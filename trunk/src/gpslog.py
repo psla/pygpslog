@@ -2,7 +2,7 @@
 import gpssplash; reload(gpssplash);
 gpssplash.show("Initializing.")
 import os, time, traceback, math, thread
-import appuifw, e32, sysinfo
+import appuifw, e32, sysinfo, audio
 
 import graphics
 from   key_codes   import *
@@ -19,6 +19,10 @@ import gpsloglm
 if IN_EMU: reload(gpsloglm)
 try:    from e32jext import cputime, battery_status, EPoweredByBattery
 except: cputime, battery_status = None, None
+try: import misty as miso
+except:
+  try: import miso
+  except: miso = None
 
 gpssplash.show("Loading Default Icons.")
 import gpslogimg
@@ -40,7 +44,7 @@ try:    from gpslib.gpsnmea import NMEABluetoothProvider
 except: NMEABluetoothProvider = None
 if IN_EMU or os.path.isdir(os.path.join(DEF_LOGDIR, "Sim")):
   gpssplash.show("Loading Simulator...")
-  if IN_EMU: import gpslib.gpssim; reload(gpslib.gpssim)
+  if IN_EMU: import gpslib.gpssim; import gpslib.xmldata; reload(gpslib.gpssim); reload(gpslib.xmldata)
   try:       from gpslib.gpssim import XMLSimulator
   except: XMLSimulator = None
 else: XMLSimulator = None
@@ -69,7 +73,7 @@ TRAVELMODES     = [ ("City", 40, 50, 70), ("Overland", 100, 120, 140), ("Highway
 INTERNAL_GPS    = u"Nokia Positioning"
 LOCREQ_GPS      = u"Location Requestor"
 XMLSIM_GPS      = u"XML Simulator"
-MARKERS         = gpslogimg.ICONS.keys(); MARKERS.sort(); MARKERS = (MARKERS[2:]+[MARKERS[1]])[:6]
+ALARM_SOUND     = "alarm.aac"
 
 IMG_FONT        = (not IN_EMU and "normal") or "dense" #"title" # "dense"
 
@@ -79,7 +83,7 @@ WATCHDOG_TIMEOUT= 60
 WATCHDOG_TICK   = 10
 
 if not cputime: PERF_CTRS = 0
-if IN_EMU:      WATCHDOG_TIMEOUT, WATCHDOG_TICK = 10, 5
+if IN_EMU:      WATCHDOG_TIMEOUT, WATCHDOG_TICK, ALARM_SOUND = 10, 5, "alarm.wav"
 
 ##############################################################################
 def isdaylight(): # :-)
@@ -90,11 +94,37 @@ def ischarging():
   if not battery_status: return False
   return battery_status() != EPoweredByBattery
 
+  
 if not hasattr(__builtins__, "sum"):
   def sum(seq):
     s = 0
     for e in seq: s += e
     return s
+
+############################################################################
+alarmsnd = None
+
+def alarmEnd(pstate, cstate, err):
+  if cstate == audio.EOpen:
+    alarmsnd.stop()
+
+def alarm(snd=ALARM_SOUND, vibrate=True, snddir="."):
+
+  if os.path.exists(os.path.join(snddir, snd)):
+    global alarmsnd
+    if alarmsnd == None:
+      alarmsnd = audio.Sound.open(unicode(os.path.join(snddir, snd)))
+      alarmsnd.set_volume(alarmsnd.max_volume())
+
+    if alarmsnd.state() == audio.EOpen:
+      alarmsnd.play(callback=alarmEnd)
+
+  if not vibrate or not miso: return
+
+  def vibraThread():
+    miso.vibrate(750, 100)
+    
+  if not IN_EMU: thread.start_new_thread(vibraThread, () )
 
 ##############################################################################
 
@@ -107,7 +137,6 @@ def globalCallback(gps): # the dreaded CONE 8!
 def globalWatchdog(): # the dreaded CONE 8!
   if singleton:
     return singleton.watchdog()
-
 
 class GpsLog(object):
 
@@ -145,6 +174,9 @@ class GpsLog(object):
     self.wdtimer = None
     self.dest    = None
     self.gpson   = False
+    self.markers = gpslogimg.MARKERS
+    self.prevmark= None
+    self.warned  = False
 
     del dummy
 
@@ -171,6 +203,7 @@ class GpsLog(object):
 
     try:
       gpslogimg.addIcons(os.path.join(self.settings.logdir, "icons"))
+      self.markers = gpslogimg.MARKERS
     except Exception, exc:
       appuifw.note(u"Error loading icons: %s" % str(exc), "error")
     
@@ -403,7 +436,16 @@ class GpsLog(object):
       try:
         nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
                                      cat=self.lmsettings.warncat,
-                                     max=1, maxdist=self.lmsettings.warnrad)
+                                     max=2, maxdist=self.lmsettings.warnrad)
+        if nearest and len(nearest) > 0 and self.gps.hdg:
+          i = 0
+          while i < len(nearest):
+            wpt = nearest[i][0]
+            if wpt.hdg != None and abs(self.gps.hdg - wpt.hdg) > 45.0:
+              del nearest[i]
+            else:
+              i += 1
+
       except:
         if DEBUG: raise
         nearest = None
@@ -419,12 +461,17 @@ class GpsLog(object):
         if cat and caption.startswith(cat): caption = caption[len(cat):].strip(" -")
         gpslogimg.alphaText(img, (2, ytxt), caption, 
                             fill=self.fg, alpha=self.txtalpha, font=IMG_FONT, back=self.bg)
+        e32.reset_inactivity()
         e32.ao_yield()
         self.fmarker = cat
+        if self.prevmark != self.fmarker:
+          self.alarm()
       else:
         self.fmarker = None
     else:
       self.fmarker = None
+
+    self.prevmark = self.fmarker
 
     if not self.log:
       gpslogimg.alphaText(img, (2, 30), "No Logfile Open",
@@ -463,6 +510,7 @@ class GpsLog(object):
 
     dispmode   = self.dispmode()
     fullscreen = (appuifw.app.screen == "full")
+    perfc = (self.cpugraph and PERF_CTRS) or 0
     
 
     #------------------------------------------------------------------------
@@ -505,7 +553,7 @@ class GpsLog(object):
 
     def clearBottom():
       hc = (fullscreen and 30) or 20
-      self.view.rectangle(((2,h-10),(w-54-PERF_CTRS,h)), bg, fill=bg)
+      self.view.rectangle(((2,h-10),(w-54-perfc,h)), bg, fill=bg)
       self.view.rectangle(((w-51,h-hc),(w,h)), bg, fill=bg)
 
     def dot(drawable, a, col=0xbf0000, sr=3):
@@ -632,21 +680,30 @@ class GpsLog(object):
         
       mode, low, norm, high = self.travelmode()
 
-      mark = None
+      mark, warn = None, None
       if self.marker: mark = self.marker[0]
       if not mark:    mark = self.fmarker
       
-      if mark and mark.startswith("Speed "): mark = int(mark.split()[1])*107/100 
+      if mark and mark.startswith("Speed "):
+        mark = int(mark.split()[1])*107/100 
+        warn = mark*117/100 # ~ 125%
       else: mark = 4269
 
       if gps.speed != None:
-        fill = fg
-        if gps.speed > low:   fill = 0x7f4f00
-        if gps.speed > norm:  fill = 0xbf0000
-        if gps.speed > high:  fill = 0xff0000
-        if gps.speed >= mark: fill = 0xff0000
-        speed = u"%.1f km/h" % gps.speed
+        speed = gps.speed
+        fill  = fg
+        
+        if speed >= warn:
+          if not self.warned:  self.alarm(); self.warned = True
+        else: self.warned = False
+
+        if speed > low:   fill = 0x7f4f00
+        if speed > norm:  fill = 0xbf0000
+        if speed > high:  fill = 0xff0000
+        if speed >= mark: fill = 0xff0000
+        speed = u"%.1f km/h" % speed
         prnt(2, h-15, speed, large, fill=fill)
+        
       else:
         dx = 2
 
@@ -754,8 +811,8 @@ class GpsLog(object):
 
       else: # just clear the name and time area
         clearBottom()
-        self.view.blit(img, source=(w-PERF_CTRS-55, h-22, w-55, h),
-                            target=(w-PERF_CTRS-55, h-22))
+        self.view.blit(img, source=(w-perfc-55, h-22, w-55, h),
+                            target=(w-perfc-55, h-22))
 
     #----------------------------------------------------------------------
     elif dispmode == DISP_LANDMARK and self.lmsettings.uselm:
@@ -854,8 +911,8 @@ class GpsLog(object):
               break
         else: # just clear the screen and redraw the name and time area
           clearBottom()
-          self.view.blit(img, source=(w-PERF_CTRS-55, h-22, w-55, h),
-                              target=(w-PERF_CTRS-55, h-22))
+          self.view.blit(img, source=(w-perfc-55, h-22, w-55, h),
+                              target=(w-perfc-55, h-22))
 
       else:
         blit(img)
@@ -1056,26 +1113,28 @@ class GpsLog(object):
   ############################################################################  
   def markIn(self, no, display=True):
     if not self.gps or not self.log:
+      appuifw.note(u"Pleas start a new logfile to enable marking!", "error")
       return
 
     if self.marker:
       active = self.marker[0]
       self.markOut(display=False)
-      if active == MARKERS[no]: # toggle
+      if active == self.markers[no]: # toggle
         return
 
     
-    self.marker   = (MARKERS[no], self.gps.position)
+    self.marker   = (self.markers[no], self.gps.position)
     self.markcnt += 1
 
     wpt = self.log.waypoint(self.gps, name=self.markName(),
-                            attr={"gpslog:mark": ({"in":"true"},self.marker[0])})
+                            attr={"gpslog:mark": ({"in":"true", "directional":"true"},
+                            self.marker[0])})
     
     if display:
       self.display(immediately=True)
     
   ############################################################################  
-  def markOut(self, display=True):
+  def markOut(self, display=True, directional=True):
     if not self.marker:
       return
 
@@ -1092,6 +1151,8 @@ class GpsLog(object):
           tm = (self.gps.time != None and self.gps.time) or time.time()
           mark = self.marker[0]
           wpt.lat, wpt.lon = midpoint(self.marker[1], pos)
+          if directional:
+            wpt.hdg = int(bearing(self.marker[1], pos))
           categories = [] 
           for c in [mark, mark.split()[0]]:
             if not c in categories and c in self.lmsettings.catnames:
@@ -1100,7 +1161,7 @@ class GpsLog(object):
           gpsloglm.CreateLm(wpt, name=mark +  " - " + isoformat(tm), desc=mark,
                             cat=categories,
                             radius=distance(pos, self.marker[1])/2,
-                            edit=self.lmsettings.lmedit)
+                            edit=self.lmsettings.lmedit, fakehdg=True)
         
       self.marker = None
       if display:
@@ -1527,6 +1588,11 @@ is out of reach.
       appuifw.app.orientation = orientation
 
   ############################################################################
+  def alarm(self, snd=ALARM_SOUND):
+    vib = self.lmsettings.uselm and self.lmsettings.warnvib
+    alarm(snd=snd, snddir=self.settings.logdir, vibrate=vib)
+
+  ############################################################################
   def editLandmarkSettings(self):
     if self.lmsettings.uselm:
       self.lmsettings.execute_dialog()
@@ -1560,5 +1626,9 @@ is out of reach.
       del self.lbox; self.lbox = None
     if self.cbcg != None:
       del self.cbcg; self.cbcg = None
+    global alarmsnd
+    if alarmsnd != None:
+      alarmsnd.stop(); alarmsnd.close(); del alarmsnd; alarmsnd = None
+
 if __name__ in ['__main__', 'editor']:
   GpsLog().run()

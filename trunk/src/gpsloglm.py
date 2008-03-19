@@ -73,13 +73,21 @@ if landmarks != None:
     if id in waypointCache:
       return waypointCache[id]
 
-    lm = ReadPartialLm(db, id)
+    # lm = ReadPartialLm(db, id)
+    lm = ReadLm(db, id)
     pos = lm.GetPosition()
     rad = lm.GetCoverageRadius()
     attr = { "categories": lm.GetCategories() }
     if rad != None: attr["radius"] = rad
+    hdg = None
+    if lm.IsPositionFieldAvailable(landmarks.EPositionFieldHeading):
+      hdg = float(lm.GetPositionField(landmarks.EPositionFieldHeading))
+    # HACK ALERT:  lmx format doesn't allow for import or export of heading
+    elif lm.IsPositionFieldAvailable(landmarks.EPositionFieldBuildingTelephone):
+      hdg = lm.GetPositionField(landmarks.EPositionFieldBuildingTelephone)
+      if hdg.startswith("hdg:"): hdg = float(hdg[4:])
     wpt = (gpslogutil.Waypoint([ lm.GetLandmarkName(), pos[0], pos[1], pos[2],
-                                 None, None, None, None, None, None, None,
+                                 None, None, hdg, None, None, None, None,
                                  pos[3], pos[4], attr ] ), lm.GetIcon())
     lm.Close()
     waypointCache[id] = wpt
@@ -164,7 +172,7 @@ if landmarks != None:
     cm.Close()
     db.Close()
 
-  def CreateLm(wpt, name=None, desc=None, cat=[], radius=None, edit=False):
+  def CreateLm(wpt, name=None, desc=None, cat=[], radius=None, edit=False, fields=[], fakehdg=False):
     if not type(cat) in [list, tuple]:
       cat = [ cat ]
     lm = landmarks.CreateLandmark()
@@ -178,6 +186,15 @@ if landmarks != None:
     for c in cat:
       if c != landmarks.KPosLmNullGlobalCategory: # :-))) You have to love it!
         lm.AddCategory(c)
+
+    if wpt.hdg != None:
+      fields += [ (landmarks.EPositionFieldHeading, str(wpt.hdg)) ]
+      # HACK ALERT:  lmx format doesn't allow for import or export of heading
+      if fakehdg:
+        fields += [ (landmarks.EPositionFieldBuildingTelephone, "hdg:"+str(wpt.hdg)) ]
+
+    for f in fields:
+     lm.SetPositionField(f[0], unicode(f[1]))
 
     db = OpenDb()
   
@@ -249,14 +266,15 @@ if landmarks != None:
         (("marklm",  "Store Markers as Landmarks"), "combo",   [u"on", u"off"], u"on"),
         (("radius",  "Landmark Search Radius (km)"), "number",   [], 10),
         (("warncat", "Notify near Category"), "combo",  wptnames , u"(None)"),
-        (("warnrad", "Distance for Notfication"), "number",  [] , 25),
+        (("warnrad", "Distance for Notfication (m)"), "number",  [] , 10),
+        (("warnvib", "Vibrate on Notification"), "combo",   [u"on", u"off"], u"on"),
         (("upd",     "Update interval (s)"), "number",   [], 3),
-        (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"on"),
+        (("smico",   "Small Icons"), "combo",   [u"on", u"off"], u"off"),
         (("lmico",   "Show Nokia Icons"), "combo",   [u"on", u"off"], u"off"),
        #(("dispcat", "Display Categories", True), "text",   [], u"[]"),
         (("dispcat", "Display Categories", True), "text",   [], u"None"),
       ]
-      self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico" ]
+      self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico", "warnvib" ]
     
       gpslogutil.GpsLogSettings.__init__(self, desc, "gpsloglm.settings")
       self.__apply()
