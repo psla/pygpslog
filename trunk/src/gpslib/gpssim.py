@@ -45,6 +45,14 @@ def distance((lat1, lon1), (lat2, lon2)):
     if abs(a) > 1: a = 1
     elif a < -1: a = -1
     return CalcRad((lat1+lat2) / 2) * acos(a)
+def bearing(p1, p2):
+  """http://www.movable-type.co.uk/scripts/latlong.html"""
+  dLon = Deg2Rad(p2[1]-p1[1])
+  lat1, lon1 = Deg2Rad(p1[0]), Deg2Rad(p1[1])
+  lat2, lon2 = Deg2Rad(p2[0]), Deg2Rad(p2[1])
+  y = sin(dLon) * cos(lat2)
+  x = cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon)
+  return (Rad2Deg(atan2(y, x)) + 360.0) % 360.0
 
 class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStreamProvider):
   "XML Simulator"
@@ -58,7 +66,8 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
   position  =  property(lambda self: (self.data.lat, self.data.lon))
   alt       =  property(lambda self: self.data.alt)
   speed     =  None # will be set later
-  hdg       =  property(lambda self: self.data.hdg)
+  hdg       =  None # will be set later
+  # hdg       =  property(lambda self: self.data.hdg)
   time      =  property(lambda self: self.sattime) # see below
   localtime =  property(lambda self: time.localtime(self.time))
   gmtime    =  property(lambda self: time.gmtime(self.time))
@@ -78,6 +87,7 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
   # sattime =  property(gettime) # see below
   isotime   =  property(lambda self: isoformat(self.time))
   gpsspeed  =  None
+  gpshdg    =  None
 
   def __init__(self, interval=-1, sources=["*.gpx"], xmlmap=None, skip=None):
     self.sources  = []
@@ -148,6 +158,7 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
     self.count += 1
     self.name = "%s - %d" % (os.path.basename(self.sources[self.current]), self.count)
     self.setSpeed()
+    self.setHeading()
 
   def dataAvailable(self):
     try: # sometimes self.data gets lost ;-)
@@ -185,10 +196,21 @@ class XMLSimulator(gpslib.gpsbase.AbstractProvider, gpslib.gpsstream.AbstractStr
     self.gpsspeed = self.data.speed
     if "calcspeed" not in self.settings or not self.settings["calcspeed"]:
       self.speed = self.data.speed; return
-    if self.prev == None or self.prev[0] == (None,None): return None
+    if self.prev == None or self.prev[0] == (None,None):
+      self.speed = None
+      return None
     dt = self.time - self.prev[1]
     if dt <= 0: self.speed = None; return
     self.speed = round(3.6 * distance(self.position, self.prev[0]) / dt, 2)
+
+  def setHeading(self):
+    self.gpshdg = self.data.hdg
+    if "calcheading" not in self.settings or not self.settings["calcheading"]:
+      self.hdg = self.gpshdg; return
+    if self.prev == None or self.prev[0] == (None,None) or self.prev[0] == self.position :
+      self.hdg = None
+      return
+    self.hdg = bearing(self.prev[0], self.position)
 
   def makeKml(self):
     if not self.kml or not self.dataAvailable():
