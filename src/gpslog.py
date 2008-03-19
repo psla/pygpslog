@@ -693,7 +693,7 @@ class GpsLog(object):
         speed = gps.speed
         fill  = fg
         
-        if speed >= warn:
+        if warn != None and speed >= warn:
           if not self.warned:  self.alarm(); self.warned = True
         else: self.warned = False
 
