@@ -1,5 +1,5 @@
+Use uikludges for dialogs?
 Limit Landmark Categories
-User Icon sets
 Search icon file properly
 Maybe use tabs for display modes
 Ozi waypoint writing
@@ -10,6 +10,12 @@ inline documentation
 Metric/Imperial
 
 Done:
+0.2.2
+  Directional track segments.
+  Audible alarms.
+  Fixed a bad segment marking error.
+0.2.1
+  User Icon sets
 0.2.0:
   Added simple navigation (choose a destination).
   Switch on/off GPS without logging to file.
