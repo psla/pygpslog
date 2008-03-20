@@ -9,6 +9,10 @@
 
 ~ Changed functionality
 
+== 0.2.3 - Mar. 21, 2008 ==
+ * + Select categories to be displayed (see [README#Landmarks settings]).
+ * - Landmark access optimized. Still eats a lot of CPU, keep you charger ready.
+
 == 0.2.2 - Mar. 18, 2008 ==
  * + Added support for [extractmarks directional track segments]
  * + Added support for [README#Landmarks audible and vibrating alarms].

@@ -248,6 +248,7 @@ on the Overview and Compass pages. In the landmarks list it will be shown on top
 On the Compass and Satellite pages there will be two dot helping you navigate.
 A *blue* marker shows the absolute heading and a *red* marker will show heading
 relative to your current heading (or view direction, when going forward).
+Here's a [Screenshots#Compass screnshot].
 
 = SETTINGS =
 == General ==
@@ -282,10 +283,11 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
 These settings are for experimental features:
  * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
 
-The options menu of the landmarks settings page contains one important menu item:
+The options menu of the landmarks settings page contains some important menu items:
+ * *Remove Disp. Categories*: Hides categories from the landmarks page. *Careful*: This may eat a lot of battery.
+ * *Add Display Categories*: Unless all categories are displayed, the caveat above applies!
+ * *Landmark Editor*: Invokes Nokia's Landmark application. (*Caution*: experimental feature!).
  * *Set Icons/Categories*: This inserts the default Categories in Nokias landmarks database and sets the icons for Landmarks in these categories. *Repeat this step* if you imported landmarks from another device or PC.
-
-The other menu items are still in an experimental stage, and landmark category filtering doesn't work properly yet.
 
 Since version 0.2.1, there is also the possibility to add [UserIcons user defined icon sets],
 for new landmark categories or non-english versions of S60.
@@ -303,7 +305,7 @@ named `'alarm.aac'` to your [#General configured] log directory.
 
 == FAQ ==
  * Q: My Battery drains very rapidly!
- * A: First, [#General switch the backlight off]. If you only want to log your GPS track, switch to [#Display_Modes Powersave mode]. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`.
+ * A: First, [#General switch the backlight off]. If you only want to log your GPS track, switch to [#Display_Modes Powersave mode]. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`. If you absolutely want to display the landmarks page, [#Landmarks don't hide] any categories.
  
  * Q: When I try to start !PyGpsLog, nothing happens.
  * A: Try to install !PyGpsLog to the same drive as your Python installation.
