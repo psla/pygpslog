@@ -28,6 +28,8 @@ def iconset(inpdir, outfile, mbm=None):
   for ico in icons:
     mask = os.path.splitext(os.path.basename(ico))[0]+"_mask.png"
     print "Creating", mask
+    if ico.lower()[-4:] in [".ico", ".gif"]:
+      ico += '[0]'
     os.system('convert %s %s %s' % (ico, MK_MASK % ICONSIZE, mask))
     imgs   += [ mask, ico ]
     masks  += [ mask ]
@@ -50,7 +52,7 @@ def iconset(inpdir, outfile, mbm=None):
       mask = os.path.join("tmp", os.path.splitext(os.path.basename(ico))[0]+"_mask.bmp")
       print "Creating", icon
       os.system('convert %s %s BMP3:%s' % (ico, MK_MBMMASK % MBMSIZE, mask))
-      os.system('convert %s %s BMP3:%s' % (ico, MK_MBM, icon))
+      os.system('convert %s %s BMP3:%s' % (ico, MK_MBM % MBMSIZE, icon))
       masks  += [ mask, icon ]
       print >> par, "/c12,1 %s" % icon
 
