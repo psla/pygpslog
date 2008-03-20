@@ -178,6 +178,8 @@ class GpsLog(object):
     self.prevmark= None
     self.warned  = False
     self.lmdb    = None
+    self.drawing = False
+
 
     del dummy
 
@@ -399,20 +401,20 @@ class GpsLog(object):
     if appuifw.app.screen != "full" or not self.battmeter:
       return
     w, h = img.size
-    wb, hb, fg, bg = 10, 27, self.fg, self.bg
+    wb, hb, fg, bg = 10, 31, self.fg, self.bg
     x, y = w-5-wb, 31+hb
     batt = min(sysinfo.battery(), 100) * (hb-4) / 100 + 1
     chrg = ischarging()
-    if   IN_EMU: batt = (60-time.time() % 60) * (hb-4)  / 60
-    if   chrg:   batt = (   time.time() %  6) * (hb-4)  /  6 + 1
-    col = 0x009f00
+    if   IN_EMU: batt = (60-time.time() % 60  ) * (hb-4)  / 60
+    if   chrg:   batt = (   time.time() %  7+1) * (hb-4)  /  7 + 1
+    col = 0x007f00
     if not chrg:
       if batt < (hb-4) / 2: col = 0xa06000
       if batt < (hb-4) / 4: col = 0xff0000
     img.rectangle(((x,y-hb+2),(x+wb,y)), outline=fg, fill=bg)
     img.rectangle(((x+wb/4,y-hb),(x+wb*3/4+1,y-hb+2)), outline=fg, fill=fg)
-    img.rectangle(((x+1,y-1-batt),(x+wb-1,y-1)), outline=col, fill=col)
-    for i in range(7): bar=y+2-hb+(i+1)*(hb-2)/8; img.line(((x+1,bar),(x+wb-1,bar)), fg)
+    img.rectangle(((x+1,y-batt),(x+wb-1,y-1)), outline=col, fill=col)
+    for i in range(6): bar=y+2-hb+(i+1)*(hb-2)/7; img.line(((x+1,bar),(x+wb-1,bar)), fg)
 
   ############################################################################
   def drawMarkers(self, img, offs=0):
@@ -1009,6 +1011,10 @@ class GpsLog(object):
   ############################################################################
   def display(self, immediately=False):
   
+    if self.drawing: return
+
+    self.drawing = True
+    
     self.setRedraw(immediately)
 
     appuifw.app.title = unicode(self.modetitle())
@@ -1030,6 +1036,8 @@ class GpsLog(object):
       if not DEBUG: appuifw.note(u"Error displaying Data: %s" % str(exc), "error")
       if DEBUG: raise
       self.stop(display=False, closeGps=True)
+
+    self.drawing = False
 
   ############################################################################
   def dispmode(self):
