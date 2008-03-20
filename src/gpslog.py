@@ -177,6 +177,7 @@ class GpsLog(object):
     self.markers = gpslogimg.MARKERS
     self.prevmark= None
     self.warned  = False
+    self.lmdb    = None
 
     del dummy
 
@@ -436,7 +437,8 @@ class GpsLog(object):
       try:
         nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
                                      cat=self.lmsettings.warncat,
-                                     max=2, maxdist=self.lmsettings.warnrad)
+                                     max=2, maxdist=self.lmsettings.warnrad,
+                                     db=self.lmdb)
         if nearest and len(nearest) > 0 and self.gps.hdg:
           i = 0
           while i < len(nearest):
@@ -876,8 +878,10 @@ class GpsLog(object):
           if self.nearest: return # probably still in use
           nearest = gpsloglm.NearestLm(lat, lon,
                                        max=h/hl, maxdist=self.lmsettings.radius*1000.0,
-                                       cat=self.lmsettings.dispcat)
-          if self.dest:  nearest = [ (self.dest, None) ] +nearest
+                                       cat=self.lmsettings.dispcat,
+                                       db=None) # not!: self.lmdb, different thread)
+          if self.dest:
+            nearest = [ (self.dest, None) ] + nearest
           self.nearest = nearest
         except:
           if DEBUG: raise
@@ -1383,6 +1387,9 @@ class GpsLog(object):
 
       self.cbcg = self.gps.registerCallback(globalCallback) # the dreaded PANIC CONE 8
 
+      if self.lmsettings.uselm:
+        self.lmdb = gpsloglm.OpenDb()
+
     except SymbianError, exc:
       if exc[0]==-46: # KErrPermissionDenied
         if not DEBUG: appuifw.note(u"Permission denied. Did you sign GpsLog? See README.", "error")
@@ -1396,10 +1403,14 @@ class GpsLog(object):
       else:         raise
       return
     
+  ############################################################################
   def stopGps(self):
     if self.gps:
       self.gps.close(); del self.gps; self.gps = None
-      
+
+    if self.lmdb != None:
+      self.lmdb.Close(); del self.lmdb; self.lmdb = None
+    
   ############################################################################
   def start(self):
 
@@ -1626,6 +1637,8 @@ is out of reach.
       del self.lbox; self.lbox = None
     if self.cbcg != None:
       del self.cbcg; self.cbcg = None
+    if self.lmdb != None:
+      self.lmdb.Close(); del self.lmdb; self.lmdb = None
     global alarmsnd
     if alarmsnd != None:
       alarmsnd.stop(); alarmsnd.close(); del alarmsnd; alarmsnd = None
