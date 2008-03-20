@@ -484,7 +484,8 @@ class GpsLog(object):
   def setRedraw(self, now=True):
     s = (now and -1) or 1
     self.settings.satupd = s*abs(self.settings.satupd)
-    self.lmsettings.upd  = s*abs(self.lmsettings.upd)
+    if self.lmsettings.uselm:
+      self.lmsettings.upd  = s*abs(self.lmsettings.upd)
     
   ############################################################################  
   def drawGraph(self, rect=None):
@@ -1086,11 +1087,11 @@ class GpsLog(object):
     elif forward:   set = (self.settings.dispmode+1) % len(DISPMODES)
     else:           set = (self.settings.dispmode-1) % len(DISPMODES)
 
+    self.settings.dispmode = set
+
     if self.settings.dispmode == DISP_LANDMARK and not self.lmsettings.uselm:
       self.cycleMode(forward)
       
-    self.settings.dispmode = set
-
     self.display(immediately=True)
 
   ############################################################################
