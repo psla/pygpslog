@@ -74,6 +74,7 @@ INTERNAL_GPS    = u"Nokia Positioning"
 LOCREQ_GPS      = u"Location Requestor"
 XMLSIM_GPS      = u"XML Simulator"
 ALARM_SOUND     = "alarm.aac"
+AVG_BUFLEN      = 120
 
 IMG_FONT        = (not IN_EMU and "normal") or "dense" #"title" # "dense"
 
@@ -100,6 +101,9 @@ if not hasattr(__builtins__, "sum"):
     s = 0
     for e in seq: s += e
     return s
+
+def avg(seq):
+  return sum(seq)/len(seq)
 
 ############################################################################
 alarmsnd = None
@@ -179,7 +183,7 @@ class GpsLog(object):
     self.warned  = False
     self.lmdb    = None
     self.drawing = False
-
+    self.avgbuf  = [40.0] * AVG_BUFLEN
 
     del dummy
 
@@ -719,9 +723,7 @@ class GpsLog(object):
         mt = self.view.measure_text(fdist, bold)[0]
         yd, ya = cy - r - 2*mt[1], cy + r + mt[1]
         prnt(cx-mt[2]/2, yd, fdist, bold)
-        if gps.speed > 1.0: spd = gps.speed
-        else:               spd = ((self.log and (self.log.distance() / (time.time() - self.log.starttime()) * 3.6)) or 0.0) + 0.000001
-        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / spd * 3.6)), bold)
+        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / avg(self.avgbuf) * 3.6)), bold)
 
       dy = -self.view.measure_text(u"M", large)[0][1]
       prnt(2, h-20-dy, mode, small)
@@ -1291,10 +1293,14 @@ class GpsLog(object):
 
         self.display()
       
-        if not self.log:
+        if not gps.dataAvailable() or not gps.position or gps.position == (None,None):
           return
 
-        if not gps.dataAvailable() or not gps.position or gps.position == (None,None):
+        if self.dest != None and gps.speed != None:
+          self.avgbuf.pop(0)
+          self.avgbuf.append(gps.speed)
+
+        if not self.log:
           return
 
         if self.prevrec != None and\
@@ -1302,11 +1308,13 @@ class GpsLog(object):
            distance(gps.position, self.prevrec) < self.settings.mindist:
           self.prev = (gps.position, gps.alt) # sic!
           return
+          
         if self.prevrec != None:
           ppos, ppalt = self.prev
           alt = gps.alt
           if alt   == None: alt = 0
           if ppalt == None: ppalt = 0
+
         if self.prevrec != None and\
            self.settings.maxdist != 0 and\
            ( (distance(gps.position, ppos) > self.settings.maxdist) or\
