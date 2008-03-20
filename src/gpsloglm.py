@@ -424,10 +424,13 @@ if landmarks != None:
 
         menu = [
           (u"Landmark Editor", self.lmeditor),
-          (u"Add Display Categories", self.showcat),
-          (u"Remove Disp. Categories", self.hidecat),
           (u"Set Icons/Categories", self.addDefCat),
         ]
+        if e32.in_emulator() or __file__.lower() == r"e:\python\gpslog\gpsloglm.py":
+          menu += [
+            (u"Add Display Categories", self.showcat),
+            (u"Remove Disp. Categories", self.hidecat),
+          ]
 
         oldcat  = self.wptcat
         oldwarn = self.warncat
