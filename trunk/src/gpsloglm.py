@@ -541,7 +541,6 @@ else: # landmarks == None:
     def save(self):
       pass
 
-  del LandmarkSettings
   LandmarkSettings = NoLandmarkSettings
 
 
