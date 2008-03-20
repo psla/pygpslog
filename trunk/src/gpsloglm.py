@@ -7,6 +7,7 @@ NAN = INF/INF
 
 if landmarks != None:
   import os, e32, appuifw
+  import lmsearch
 
   LANDMARK_DB = u"file://e:gpslog.ldb"
   LANDMARK_DB = None
@@ -106,41 +107,21 @@ if landmarks != None:
     id  = cm.AddCategory(c)
     c.Close(); cm.Close(); db.Close()
       
-  def SearchLm(crit, max=-1, asWpt=False, opOR=False, db=None):
+  def SearchLm(crit, max=-1, asWpt=False, db=None):
+      
     if db != None: sdb = db
     else:          sdb = OpenDb()
-    if type(crit) not in (tuple, list): critList = [ crit ]
-    else:                               critList = crit
+    
     try:
-      srch = sdb.CreateSearch()
-      # we're only doing this because CompositeCriteria crashes the app:
-      # So let's chain the searches
-      prevOnly = False
-      res = []
-      for crit in critList:
-        if not opOR: res = []
-        else:        prevOnly = False
-        op   = srch.StartLandmarkSearch(crit, landmarks.ENoAttribute, 0, prevOnly)
-        if max >= 0:
-          srch.SetMaxNumOfMatches(max)
-        op.Execute(); op.Close()
-        if srch.NumOfMatches() > 0: # ??? see landmarks doc
-          it = srch.MatchIterator()
-          id = it.Next()
-          while id != landmarks.KPosLmNullItemId:
-            if asWpt:
-              res += [ ReadLmWpt(sdb, id) ]
-            else:
-              res += [id]
-            id = it.Next()
-          it.Close()
-        else:
-          break
-        prevOnly = True
-      srch.Close()
+      ids = lmsearch.Landmarks(crit).findIds(sdb)
+      if not asWpt:
+        res = ids
+      else:
+        res = [ ReadLmWpt(sdb, id) for id in ids ]
     finally:
       if db == None:
         sdb.Close()
+
     return res
 
   def SetCatIcons(name): # This version gives us a KErrLocked
@@ -152,10 +133,7 @@ if landmarks != None:
       icon = cat.GetIcon()
       cat.Close()
       if icon != None:
-        # sc   = landmarks.CreateCategoryCriteria(0, 0, unicode(name))
-        sc   = landmarks.CreateCategoryCriteria(cid, 0, "")
-        ids  = SearchLm(sc, db=db)
-        sc.Close()
+        ids  = SearchLm(lmsearch.Category(cid), db=db)
         done = [] # dupes possible, then db is locked (though lm is closed :-( )
         for id in ids:
           if id in done: continue
@@ -222,7 +200,7 @@ if landmarks != None:
       
     db.Close()
   
-  def NearestLm(lat, lon, max=16, maxdist=-1.0, cat=-1):
+  def NearestLmClassic(lat, lon, max=16, maxdist=-1.0, cat=-1, db=None):
     if lat == None or lon == None:
       return []
 
@@ -230,22 +208,59 @@ if landmarks != None:
       if type(cat) not in [list, tuple]: cat = [cat]
     else: cat = []
 
-    sc = []
-    nrst = landmarks.CreateNearestCriteria(lat, lon, 0.0, True, float(maxdist))
+    nrst = lmsearch.Nearest((lat, lon), maxdist, True) 
 
     if len(cat) != 0:
-      # catc   = landmarks.CreateCategoryCriteria(cat, 0, "")
-      # sc     = landmarks.CreateCompositeCriteria(landmarks.ECompositionAND,
-      #           [ catc, near ])
-      # catc.Close(); near.Close()
-      if len(cat) == 1: sc += [ nrst ]
-      for c in cat:
-        sc += [ landmarks.CreateCategoryCriteria(c, 0, "") ]
-    if len(cat) > 1 or len(cat) == 0:
-      sc += [ nrst ]
-    res  = SearchLm(sc, max=max, asWpt=True)
-    for s in sc: s.Close()
+      sc = [ (nrst, lmsearch.Category(c)) for c in cat ]
+    else:
+      sc = [ nrst ]
+
+    res  = SearchLm(sc, max=max, asWpt=True, db=db)
+
+    while sc: del sc[0]
+
     return res
+
+  def NearestLm(lat, lon, max=16, maxdist=-1.0, cat=-1, db=None):
+    if lat == None or lon == None:
+      return []
+
+    if cat != -1 and cat != None:
+      if type(cat) not in [list, tuple]: cat = [cat]
+    else: cat = []
+
+    nrst = lmsearch.Nearest((lat, lon), maxdist, True) 
+
+    if len(cat) == 0:
+      res = SearchLm(nrst, max=max, asWpt=True, db=db)
+
+    else:
+      # We want the result ordered by distance
+      if db != None: sdb = db
+      else:          sdb = OpenDb()
+
+      usecompost = lmsearch.Landmarks.USE_COMPOSITE
+      lmsearch.Landmarks.USE_COMPOSITE = True
+
+      near = lmsearch.Landmarks(nrst).findIds(db=sdb)
+
+      if near:
+        sc  = [ (lmsearch.ItemIds(near), lmsearch.Category(c)) for c in cat ]
+        ids = lmsearch.Landmarks(sc).findIds(db=sdb, max=max)
+        res = [ ReadLmWpt(sdb, id) for id in near if id in ids ]
+        del near, ids
+        lmsearch.Landmarks.USE_COMPOSITE = usecompost
+        while sc: del sc[0]
+      else:
+        res = []
+
+      if db == None:
+        sdb.Close()
+
+    del nrst
+
+    return res
+  
 
   class LandmarkSettings(gpslogutil.GpsLogSettings):
 
@@ -424,13 +439,13 @@ if landmarks != None:
 
         menu = [
           (u"Landmark Editor", self.lmeditor),
+          (u"Add Display Categories", self.showcat),
+          (u"Remove Disp. Categories", self.hidecat),
           (u"Set Icons/Categories", self.addDefCat),
         ]
-        if e32.in_emulator() or __file__.lower() == r"e:\python\gpslog\gpsloglm.py":
-          menu += [
-            (u"Add Display Categories", self.showcat),
-            (u"Remove Disp. Categories", self.hidecat),
-          ]
+        #if e32.in_emulator() or __file__.lower() == r"e:\python\gpslog\gpsloglm.py":
+        #  menu += [
+        #  ]
 
         oldcat  = self.wptcat
         oldwarn = self.warncat
