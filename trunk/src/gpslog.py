@@ -401,8 +401,8 @@ class GpsLog(object):
     if appuifw.app.screen != "full" or not self.battmeter:
       return
     w, h = img.size
-    wb, hb, fg, bg = 10, 31, self.fg, self.bg
-    x, y = w-5-wb, 31+hb
+    wb, hb, fg, bg = 9, 24, self.fg, self.bg
+    x, y = w-5-wb, 32+hb
     batt = min(sysinfo.battery(), 100) * (hb-4) / 100 + 1
     chrg = ischarging()
     if   IN_EMU: batt = (60-time.time() % 60  ) * (hb-4)  / 60
