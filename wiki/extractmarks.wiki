@@ -1,5 +1,5 @@
 #summary How to use the extractmarks.py tool.
-#labels Documentation
+#labels Documentation,Priority-5-Normal
 
 = extractmarks.py =
 
