@@ -1,0 +1,61 @@
+Separate (?) waypoint file for GPX
+Ozi waypoint writing
+
+inline documentation
+
+Low priority:
+  Maybe use tabs for display modes
+
+  Metric/Imperial
+
+Done:
+0.2.3:
+  Restructured landmark search
+  Limit Landmark Categories (until I find a way to use Landmark searches properly)
+0.2.2
+  Directional track segments.
+  Audible alarms.
+  Fixed a bad segment marking error.
+0.2.1
+  User Icon sets
+0.2.0:
+  Added simple navigation (choose a destination).
+  Switch on/off GPS without logging to file.
+  Show 2D/3D Fix types based on alt availabilty.
+  Added a Battery Meter in full screen mode.
+  Added a Watchdog timer to redraw screen and check for dead GPS.
+  Added possibility to restart on GPS failure.
+  Fixed Crash on lost NMEA.
+  Redraw on invalidated rect.
+  Fixed ultra high CPU usage: search proximity first, then cat, use cache.
+  Switch to normal screen on pause
+  Fix Crash on lost LocationRequestor
+  Landmark redraw like satupd
+  Use envy if present to prevent red key
+  Unbind keys on exit (for debugging)
+  gpslib: simulation provider (GPX, OZI)
+  Fix Waypoint marking
+  Full screen mode
+  Night mode
+  CPU usage meter
+  Ask for conirmation on exit, if logging active
+  Better packaging process
+0.1.7:
+  Display Off Mode
+  Convert icons to jpgs
+  Speed begin-end
+  Alt. correction
+  Larger spd/hdg display
+  show recorded time
+  switch backlight off on focus lost
+  Check GPS-Type availability
+  Travel Modes (Walk, City, Highway, ...)
+  Waypoint marker
+  Skip erratic altitudes
+
+Won't fix:
+  DEBUG: switch to console output (no key bindings that work on canvas w/o event handler)
+  Use uitricks to change dialog labels. (Doesn't work with dialogs, http://discussion.forum.nokia.com/forum/showthread.php?t=80353&highlight=uitricks .)
+  Use uikludges for dialogs? (Doesn't really help also)
+  Find memory hole in XMLSimulator. (Probably in cElementtree, SIM isn't distributed anyway)
+  
