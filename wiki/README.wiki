@@ -24,6 +24,7 @@
   # [#Known_Problems Known Problems]
   # [#FAQ FAQ]
  # [#SCREENSHOTS SCREENSHOTS]
+ # [#ACKNOWLEDGEMENTS ACKNOWLEDGEMENTS]
  
 = ABOUT =
 [http://code.google.com/p/pygpslog/ pygpslog] is a GPS logger for S60 
@@ -320,3 +321,8 @@ http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite-nm.jpg
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Compass-nm.jpg
 
 Some more [Screenshots here].
+
+= ACKNOWLEDGEMENTS =
+ * All authors of the [#INSTALLATION required and recommended modules]. Without them, this work would have been impossible!
+ * [http://12m3.deviantart.com/ M. Umut Pulat] for his beautiful _Tulliana 2_ icon set!
+ * [http://miloszwl.deviantart.com/ Milosz Wlazlo] for the original _Boomy_ icon set!
