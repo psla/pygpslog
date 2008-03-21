@@ -246,8 +246,10 @@ if landmarks != None:
         usecompost = lmsearch.Landmarks.USE_COMPOSITE
         lmsearch.Landmarks.USE_COMPOSITE = True
         sc  = [ (lmsearch.ItemIds(near), lmsearch.Category(c)) for c in cat ]
-        ids = lmsearch.Landmarks(sc).findIds(db=sdb, max=max)
-        res = [ ReadLmWpt(sdb, id) for id in near if id in ids ]
+        ids = lmsearch.Landmarks(sc).findIds(db=sdb)
+        ids = [ id for id in near if id in ids ]
+        if max > 0: ids = ids[:max]
+        res = [ ReadLmWpt(sdb, id) for id in ids ]
         del near, ids
         while sc: del sc[0]
         lmsearch.Landmarks.USE_COMPOSITE = usecompost
