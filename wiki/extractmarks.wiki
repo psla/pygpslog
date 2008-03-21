@@ -1,4 +1,5 @@
 #summary How to use the extractmarks.py tool.
+#labels Documentation
 
 = extractmarks.py =
 
@@ -27,7 +28,7 @@ extractmarks.py inp/new/GpsLog-*.gpx -o segments/Segments-YYMMDD.gpx
 }}}
 
 After that, I edit the file with
-[http://notepad-plus.sourceforge.net/uk/site.htm any decent] text or XML editor,
+[http://notepad-plus.sourceforge.net any decent] text or XML editor,
 giving the segments proper names, or deleting the `'directional'` attribute
 from the first trackpoint where appropriate.
 
@@ -38,7 +39,7 @@ extractmarks.py segments/Segments-*.gpx -o segments/Collection.gpx -m 500 --lmx=
 }}}
 
 This collects all my edited files and put's them into a single collection
-(which I usually convert to KML, using [README#GPSBabel GPSBabel].
+(which I usually convert to KML, using [README#GPSBabel GPSBabel]).
 This also creates a `Collection.lmx` file which I'll send back to my device,
 replacing the (coarse) recorded landmarks. The `-m 500` option tells
 `extractmarks.py` to split all large segments into smaller ones with a maximum
@@ -46,3 +47,8 @@ radius of 500 m.
 
 After that, I'll run !PyGpsLog, call the [README#Landmarks Set Icon/Categories] menu
 and got all my track segments and their icons in my landmark collection.
+
+For this tool to work, you need to have Python with
+[http://effbot.org/zone/celementtree.htm cElementTree] (standard from 2.5 on)
+or [http://effbot.org/zone/element-index.htm ElementTree] (though not tested),
+installed.
