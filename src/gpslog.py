@@ -635,9 +635,8 @@ class GpsLog(object):
         if ddist >= 1000.0: show("Destination",u"%-5.1f km" % ( ddist / 1000.0))
         else:               show("Destination",u"%-5.0f m" % ddist)
         if h > 240:
-          if gps.speed > 1.0: spd = gps.speed
-          else:               spd = avgspd + 0.000001
-          show("Arrival", time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / spd * 3.6)))
+          mavg = avg(self.avgbuf)+0.000001
+          show("Arrival", time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / mavg * 3.6)))
         
       line += hl
       if gps.time:                       show("Time", time.strftime("%H:%M:%S", gps.localtime))
@@ -721,7 +720,7 @@ class GpsLog(object):
 
       if self.dest != None and lat and lon:
         ddist = self.dest.distance(position)
-        mavg = avg(self.avgbuf)
+        mavg = avg(self.avgbuf)+0.000001
         if ddist >= 1000.0: fdist = u"%5.1f km" % ( ddist / 1000.0)
         else:               fdist = u"%5.0f m" % ddist
         maspd = u"%.1f km/h" % mavg
@@ -888,8 +887,10 @@ class GpsLog(object):
       def searchThread():
         try:
           if self.nearest: return # probably still in use
+          max = h/hl
+          if self.dest: max -= 1
           nearest = gpsloglm.NearestLm(lat, lon,
-                                       max=h/hl, maxdist=self.lmsettings.radius*1000.0,
+                                       max=max, maxdist=self.lmsettings.radius*1000.0,
                                        cat=self.lmsettings.dispcat,
                                        db=None) # not!: self.lmdb, different thread)
           if self.dest:
