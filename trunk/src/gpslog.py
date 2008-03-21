@@ -265,6 +265,7 @@ class GpsLog(object):
                              ( u"Toggle Idle GPS",   self.toggleGps),
                            ) ),
         ] + [ setmenu ] + [
+        (u"Help",          self.showHelp),
         (u"Exit",          self.close),
       ]
       
@@ -734,8 +735,8 @@ class GpsLog(object):
       dy = -self.view.measure_text(u"M", large)[0][1]
       prnt(2, h-20-dy, mode, small)
 
-      prnt(w - 75, 10, coord(lon),      small)
-      prnt(w - 75, 20, coord(lat,"EW"), small)
+      prnt(w - 75, 10, coord(lat),      small)
+      prnt(w - 75, 20, coord(lon,"EW"), small)
   
     #------------------------------------------------------------------------
     elif dispmode == DISP_SATGRAPH:
@@ -1575,6 +1576,22 @@ class GpsLog(object):
     if self.dest != None:
       self.dest = Waypoint(self.dest)
 
+  ############################################################################
+  def showHelp(self):
+    viewMenu = ( # Was meant to be used as a submenu
+      (u"Start Log [Yes] (Green)", lambda: 0),
+      (u"Start GPS [Enter]", lambda: 0),
+      (u"Pause [C]", lambda: 0),
+      (u"Next Page [\u2192], [3]", lambda: 0),
+      (u"Prev. Page [\u2190], [1]", lambda: 0),
+      (u"Create Waypoint [#]", lambda: 0),
+      (u"Start Segment [4]-[9]", lambda: 0),
+      (u"End Segment [*]", lambda: 0),
+      (u"Toggle Night Mode [0]", lambda: 0),
+      (u"Toggle Fullscreen [2]", lambda: 0),
+    )
+    appuifw.popup_menu([m[0] for m in viewMenu], u"Keyboard Help")
+    
   ############################################################################
   def editSettings(self):
   
