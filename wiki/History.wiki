@@ -1,5 +1,5 @@
 #summary Version Changelog.
-#labels Featured,Documentation
+#labels Featured,Documentation,Priority-5-Normal
 
 = Version History =
 === Legend ===
