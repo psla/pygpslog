@@ -124,7 +124,7 @@ With a segment marker
   </metadata>
   <trk>
     <trkseg>
-      <trkpt lat="47.839628333" lon="12.110273333">
+      <trkpt lat="48.939628333" lon="12.320273333">
         <ele>444.399994</ele>
         <time>2008-03-05T21:04:47Z</time>
         <sat>6</sat>
