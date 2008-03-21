@@ -123,12 +123,15 @@ def alarm(snd=ALARM_SOUND, vibrate=True, snddir="."):
     if alarmsnd.state() == audio.EOpen:
       alarmsnd.play(callback=alarmEnd)
 
-  if not vibrate or not miso: return
+  # on my E65, vibrating while charging seems to be a BAD idea!
+  # so if we cannot check the charging status, forget the vibration
+  if not vibrate or not miso or not battery_status: return
 
   def vibraThread():
     miso.vibrate(750, 100)
     
-  if not IN_EMU: thread.start_new_thread(vibraThread, () )
+  if not ischarging() and not IN_EMU:
+    thread.start_new_thread(vibraThread, () )
 
 ##############################################################################
 
