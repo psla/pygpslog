@@ -239,23 +239,24 @@ if landmarks != None:
       if db != None: sdb = db
       else:          sdb = OpenDb()
 
-      usecompost = lmsearch.Landmarks.USE_COMPOSITE
-      lmsearch.Landmarks.USE_COMPOSITE = True
 
       near = lmsearch.Landmarks(nrst).findIds(db=sdb)
 
       if near:
+        usecompost = lmsearch.Landmarks.USE_COMPOSITE
+        lmsearch.Landmarks.USE_COMPOSITE = True
         sc  = [ (lmsearch.ItemIds(near), lmsearch.Category(c)) for c in cat ]
         ids = lmsearch.Landmarks(sc).findIds(db=sdb, max=max)
         res = [ ReadLmWpt(sdb, id) for id in near if id in ids ]
         del near, ids
-        lmsearch.Landmarks.USE_COMPOSITE = usecompost
         while sc: del sc[0]
+        lmsearch.Landmarks.USE_COMPOSITE = usecompost
       else:
         res = []
 
       if db == None:
         sdb.Close()
+
 
     del nrst
 
@@ -361,17 +362,16 @@ if landmarks != None:
 
     ##########################################################################
     def lmeditor(self):
+      screen = appuifw.app.screen
       try:
-        rc = e32.start_exe(ur"Z:\sys\bin\landmarks.exe", u"", True)
-        if rc != 0:
-          appuifw.note(u"Landmark Editor failed (%d)" % rc, "error")
-        else:
-          appuifw.note(u"Please close and re-open Landmark settings", "conf")
-        ClearCache()
-      except:
-        appuifw.note(u"Cannot Start Landmark Editor", "error")
-        if e32.in_emulator(): raise
-
+        appuifw.app.screen = "normal"
+        rc, id, db = landmarks.ShowSelectLandmarkDialog(landmarks.KPosLmNullItemId)
+        if rc == 0: return
+        db.ShowEditDialog(id, landmarks.ELmkAll, landmarks.ELmkEditor, True)
+        db.Close()
+      finally:
+        appuifw.app.screen = screen
+      
     ##########################################################################
     def showcat(self):
       # we're in execute_dialog i.e. we're in unicode world now!
