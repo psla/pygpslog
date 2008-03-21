@@ -16,6 +16,7 @@ http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Compass-nm.jpg
 Only available with landmarks module installed
 
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Landmarks.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Landmarks-big.jpg
 http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Landmarks-nm.jpg
 
 === Sample Logfiles ===
