@@ -727,9 +727,9 @@ class GpsLog(object):
         mt  = self.view.measure_text(fdist, bold)[0]
         mts = self.view.measure_text(maspd, smit)[0]
         yd, ya, ys = cy - r - 2*mt[1], cy + r + mt[1], cy + r + mt[1]-4+mts[1]
-        prnt(cx-mt[2]/2, yd, fdist, bold)
-        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / mavg * 3.6)), bold)
-        prnt(cx-mt[2]/2, ys, maspd, smit)
+        prnt(cx-mt[2]/2,  yd, fdist, bold)
+        prnt(cx-mt[2]/2,  ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / mavg * 3.6)), bold)
+        prnt(cx-mts[2]/2, ys, maspd, smit)
 
       dy = -self.view.measure_text(u"M", large)[0][1]
       prnt(2, h-20-dy, mode, small)
