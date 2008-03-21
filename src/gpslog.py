@@ -103,7 +103,7 @@ if not hasattr(__builtins__, "sum"):
     return s
 
 def avg(seq):
-  return sum(seq)/len(seq)
+  return float(sum(seq))/len(seq)
 
 ############################################################################
 alarmsnd = None
@@ -183,7 +183,7 @@ class GpsLog(object):
     self.warned  = False
     self.lmdb    = None
     self.drawing = False
-    self.avgbuf  = [40.0] * AVG_BUFLEN
+    self.avgbuf  = [40] * AVG_BUFLEN
 
     del dummy
 
@@ -200,7 +200,9 @@ class GpsLog(object):
       global PERF_CTRS
     #  PERF_CTRS = 0
     
-    self.settings.satupd = -2
+    self.settings.satupd = 2
+    
+    self.setRedraw(now=True)
 
     if self.settings.btdevice == "on":
       self.btaddr = None
@@ -718,12 +720,16 @@ class GpsLog(object):
 
       if self.dest != None and lat and lon:
         ddist = self.dest.distance(position)
+        mavg = avg(self.avgbuf)
         if ddist >= 1000.0: fdist = u"%5.1f km" % ( ddist / 1000.0)
         else:               fdist = u"%5.0f m" % ddist
-        mt = self.view.measure_text(fdist, bold)[0]
-        yd, ya = cy - r - 2*mt[1], cy + r + mt[1]
+        maspd = u"%.1f km/h" % mavg
+        mt  = self.view.measure_text(fdist, bold)[0]
+        mts = self.view.measure_text(maspd, smit)[0]
+        yd, ya, ys = cy - r - 2*mt[1], cy + r + mt[1], cy + r + mt[1]-4+mts[1]
         prnt(cx-mt[2]/2, yd, fdist, bold)
-        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / avg(self.avgbuf) * 3.6)), bold)
+        prnt(cx-mt[2]/2, ya, time.strftime("%H:%M:%S", time.localtime(gps.time + ddist / mavg * 3.6)), bold)
+        prnt(cx-mt[2]/2, ys, maspd, smit)
 
       dy = -self.view.measure_text(u"M", large)[0][1]
       prnt(2, h-20-dy, mode, small)
@@ -1298,7 +1304,7 @@ class GpsLog(object):
 
         if self.dest != None and gps.speed != None:
           self.avgbuf.pop(0)
-          self.avgbuf.append(gps.speed)
+          self.avgbuf.append(int(gps.speed))
 
         if not self.log:
           return
