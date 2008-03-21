@@ -1,5 +1,5 @@
 #summary pygpslog Documentation.
-#labels Featured,Documentation
+#labels Featured,Documentation,Priority-0-High
 == CONTENTS ==
  # [#ABOUT ABOUT]
  # [#WHAT_S_NEW WHAT'S NEW]
