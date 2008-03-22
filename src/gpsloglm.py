@@ -130,6 +130,8 @@ if landmarks != None:
     cid  = cm.GetCategory(unicode(name))
     if cid != landmarks.KPosLmNullItemId:
       cat = cm.ReadCategory(cid)
+      if cat.GlobalCategory() != landmarks.KPosLmNullItemId:
+        return # ignore Global categories
       icon = cat.GetIcon()
       cat.Close()
       if icon != None:
@@ -424,13 +426,14 @@ if landmarks != None:
     def addDefCat(self):
       prog = gpslogutil.ProgressDialog()
       prog.show()
-      tot = len(ICON_DEF)-1; i = 0
+      tot = len(ICON_DEF)-1; i = 1
       try:
         for nm, icon in ICON_DEF[1:]:
           prog.text = nm; prog.progress = i * 100 / tot; i += 1
           if not nm in self.catnames:
             CreateCat(nm, nm)
-          SetCatIcons(nm)
+          if nm != "Speed": # sorry for the special case
+            SetCatIcons(nm)
       except Exception, exc:
         prog.hide()
         appuifw.note(u"An error occurred: %s" % str(exc), "error")
