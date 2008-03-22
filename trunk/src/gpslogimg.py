@@ -18,6 +18,7 @@ ICONCAT       = [ "Default",  "Speed 30", "Speed 50", "Speed 60", "Speed 70",
                   "Speed 80", "Speed 100" ]
 ICONS         = [ (ICONCAT[idx], idx) for idx in range(len(ICONCAT)) ]
 MARKERS       = ICONCAT[1:]
+MARKERCAT     = "Speed"
 
 assert len(ICONS) <= ALLICONS.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
        "Not enough icons in image file"
@@ -79,34 +80,40 @@ del ALLICONS
 
 ##############################################################################
 def addIconModule(ico):
-  if not hasattr(ico, "ICONFILE") or not hasattr(ico, "ICONDEF"):
-    return
-  icopath = os.path.dirname(ico.__file__)
-  img = Image.open(os.path.join(icopath, ico.ICONFILE))
-  assert len(ico.ICONDEF) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
-         "Not enough icons in image file"
+
+  if hasattr(ico, "ICONFILE") and hasattr(ico, "ICONDEF"):
+    icopath = os.path.dirname(ico.__file__)
+    img = Image.open(os.path.join(icopath, ico.ICONFILE))
+    assert len(ico.ICONDEF) <= img.size[1] / ICONSIZE[1] * ICONS_PER_ROW, \
+           "Not enough icons in image file"
+
+    for idx in range(len(ico.ICONDEF)):
+      icodef = ico.ICONDEF[idx]
+      if type(icodef) in [list, tuple]:
+        if len(icodef) < 3: icodef = icodef + (None,)
+      else:
+        icodef = (icodef, None, None)
+      iconame, mifidx, mifmask = icodef
+      if iconame in ICONS: del ICONS[iconame]
+      if hasattr(ico, "ICONMIF") and os.path.exists(os.path.join(icopath, ico.ICONMIF)):
+        miffile = os.path.abspath(os.path.join(icopath, ico.ICONMIF))
+        if mifidx  == None: mifidx  = idx * 2
+        if mifmask == None: mifmask = mifidx + 1
+      else:
+        miffile, mifidx, mifmask = [None]*3
+
+      ICONS[iconame] = GpsIcon(img, idx, miffile, mifidx, mifmask)
+    del img
+
   if hasattr(ico, "MARKERS"):
-    global MARKERS
+    global MARKERS, MARKERCAT
     MARKERS = ico.MARKERS[:]
     assert len(MARKERS) == 6, "MARKERS must have exactly 6 elements"
-
-  for idx in range(len(ico.ICONDEF)):
-    icodef = ico.ICONDEF[idx]
-    if type(icodef) in [list, tuple]:
-      if len(icodef) < 3: icodef = icodef + (None,)
-    else:
-      icodef = (icodef, None, None)
-    iconame, mifidx, mifmask = icodef
-    if iconame in ICONS: del ICONS[iconame]
-    if hasattr(ico, "ICONMIF") and os.path.exists(os.path.join(icopath, ico.ICONMIF)):
-      miffile = os.path.abspath(os.path.join(icopath, ico.ICONMIF))
-      if mifidx  == None: mifidx  = idx * 2
-      if mifmask == None: mifmask = mifidx + 1
-    else:
-      miffile, mifidx, mifmask = [None]*3
-
-    ICONS[iconame] = GpsIcon(img, idx, miffile, mifidx, mifmask)
-  del img
+    if hasattr(ico, "MARKERCAT"):
+      MARKERCAT = ico.MARKERCAT
+    for m in MARKERS + [MARKERCAT]:
+      if not m in ICONS:
+        ICONS[m] = ICONS["Default"]
 
 def addIcons(icondir):
   import imp
