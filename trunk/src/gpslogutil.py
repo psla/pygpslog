@@ -27,6 +27,7 @@ SECONDS_PER_DAY = 24*3600
 DEF_LOGDIR   = (os.path.isdir("E:\Data") and  "E:\Data\GpsLog") or "C:\Data\GpsLog"
 if SYMBIAN and e32.in_emulator(): DEF_LOGDIR = r"c:\python"
 
+###############################################################################
 def isoformat(ts):
   return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts))
 
@@ -60,6 +61,7 @@ if not hasattr(math, "degrees"):
 Deg2Rad = radians
 Rad2Deg = degrees
 
+###############################################################################
 def CalcRad(lat):
     "Radius of curvature in meters at specified latitude."
     a = 6378.137
@@ -85,6 +87,7 @@ def CalcRad(lat):
     r = r * 1000.0	# Convert to meters
     return r
 
+###############################################################################
 def earthDistance((lat1, lon1), (lat2, lon2)):
     "Distance in meters between two points specified in degrees."
     if (lat1, lon1) == (lat2, lon2): return 0.0
@@ -106,6 +109,7 @@ def earthDistance((lat1, lon1), (lat2, lon2)):
     elif a < -1: a = -1
     return CalcRad((lat1+lat2) / 2) * acos(a)
 
+###############################################################################
 def simpleDistance(p1, p2):
   lat1, lon1 = p1
   lat2, lon2 = p2
@@ -123,6 +127,7 @@ def simpleDistance(p1, p2):
     return 0.0
   return d
   
+###############################################################################
 def simpleMidpoint(p1, p2):
   """http://www.movable-type.co.uk/scripts/latlong.html"""
   dLon = Deg2Rad(p2[1]-p1[1])
@@ -135,6 +140,7 @@ def simpleMidpoint(p1, p2):
   lon3 = lon1 + atan2(By, cos(lat1) + Bx)
   return Rad2Deg(lat3), Rad2Deg(lon3)
   
+###############################################################################
 def simpleDestpoint((lat1, lon1), a, d):
   """http://www.movable-type.co.uk/scripts/latlong.html"""
   R = 6371000.0
@@ -147,6 +153,7 @@ def simpleDestpoint((lat1, lon1), a, d):
 
   return (Rad2Deg(lat2), Rad2Deg(lon2))
 
+###############################################################################
 def simpleBearing(p1, p2):
   """http://www.movable-type.co.uk/scripts/latlong.html"""
   dLon = Deg2Rad(p2[1]-p1[1])
@@ -156,11 +163,13 @@ def simpleBearing(p1, p2):
   x = cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(dLon)
   return (Rad2Deg(atan2(y, x)) + 360.0) % 360.0
 
+###############################################################################
 distance  = earthDistance
 midpoint  = simpleMidpoint
 destpoint = simpleMidpoint
 bearing   = simpleBearing
 
+###############################################################################
 class Waypoint(list):
   FIELDS = [ "name", "lat", "lon", "alt", "time",
              "speed","hdg", "fix", "hdop","vdop", "pdop",
@@ -192,6 +201,7 @@ class Waypoint(list):
     return bearing((self.lat, self.lon), other)
 
 
+###############################################################################
 class GpsLogfile(object):
   def __init__(self, logname=None, logdir=DEF_LOGDIR, ext=".log"):
     self.ts = time.time() - 0.000001 # ;-) so we'll always get a difference > 0
@@ -241,6 +251,7 @@ class GpsLogfile(object):
   def close(self):
     pass
 
+###############################################################################
 class OziLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,
                extended=True, comment="", **_rest):
@@ -292,6 +303,7 @@ Reserved 3
 
     super(OziLogfile, self).close()
 
+###############################################################################
 class GpxLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,
                extended=True, satellites=True,
@@ -425,6 +437,7 @@ class GpxLogfile(GpsLogfile):
 
     super(GpxLogfile, self).close()
 
+###############################################################################
 def mergeWaypoints(gpxfile, progresscb=None):
   if gpxfile.lower().endswith("-wpt.gpx"): return False
   if not os.path.exists(gpxfile): return False
@@ -531,6 +544,7 @@ if SYMBIAN:
   class GpsLogSettings(GpsLogBaseSettings):
       pass
 
+  #############################################################################
   class ProgressDialog(object):
     DEFAULT_FONT = (not e32.in_emulator() and "normal") or "dense"
     
