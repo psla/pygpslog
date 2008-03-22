@@ -333,7 +333,7 @@ Reserved 3\r
 class GpxLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,
                extended=True, satellites=True,
-               comment="", startTrack=True, **_rest):
+               comment="", waypointFile=False, **_rest):
 
     super(GpxLogfile, self).__init__(logname=logname, logdir=logdir, ext=".gpx")
     
@@ -343,7 +343,7 @@ class GpxLogfile(GpsLogfile):
     self.file = file(self.name(), "w")
 
     self.gpx  = XMLWriter(self.file, encoding="utf-8")
-      
+    
     self.gpx.declaration()
     
     if comment: comment = " ("+comment+")"
@@ -363,9 +363,14 @@ class GpxLogfile(GpsLogfile):
     self.gpx.end("time")
     self.gpx.end("metadata")
     
-    if startTrack:
+    if not waypointFile:
       self.gpx.start("trk")
       self.gpx.start("trkseg")
+      self.wptgpx = GpxLogfile(logname=self.name().replace(".gpx","-wpt.gpx"), logdir="", waypointFile=True)
+      self.wptgpx.ts = self.ts
+    else:
+      self.wptgpx = None
+
 
   def format(self, gps, skipped=0, name=None, attr=None, isWaypoint=False):
     super(GpxLogfile, self).format(gps, skipped)
@@ -435,13 +440,18 @@ class GpxLogfile(GpsLogfile):
   def waypoint(self, gps, name=None, attr=None):
     wpt = super(GpxLogfile, self).waypoint(gps, name, attr)
     self.format(gps, name=wpt[0], attr=attr)
+    if self.wptgpx:
+      self.wptgpx.format(wpt, name=wpt.name, attr=wpt.attr, isWaypoint=True)
     return wpt
 
   def close(self):
     if self.gpx != None:
       self.gpx.close(0);
       self.gpx.comment("Summary:")
-      self.gpx.comment("Trackpoints: %d" % self.tracks())
+      if self.wptgpx != None:
+        self.gpx.comment("Trackpoints: %d" % self.tracks())
+      else:
+        self.gpx.comment("Waypoints: %d" % self.tracks())
       self.gpx.comment("Distance:    %.1fkm" % (self.distance()/1000.0))
       chklen = "Chklen: %09d"
       chklen = chklen % (self.file.tell() + len(chklen%0) + 10)
@@ -449,17 +459,12 @@ class GpxLogfile(GpsLogfile):
       del self.gpx; self.gpx = None
 
     self.file.close()
+
+    if self.wptgpx != None:
+      self.wptgpx.close() # will delete itself if there were no waypoints added!
+
     if self.tracks() == 0:
       os.remove(self.name())
-
-    if self.waypoints():
-      name, ext = os.path.splitext(self.name())
-      gpx = GpxLogfile(logname=name+"-wpt"+ext, logdir="", startTrack=False)
-      gpx.ts = self.ts
-
-      for wpt in self.waypoints():
-        gpx.format(wpt, name=wpt.name, attr=wpt.attr, isWaypoint=True)
-      gpx.close()
 
     super(GpxLogfile, self).close()
 
