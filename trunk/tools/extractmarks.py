@@ -1,4 +1,5 @@
-import sys, os, cStringIO as StringIO, optparse, glob, time
+# -*- coding: cp850 -*-
+import sys, os, cStringIO as StringIO, optparse, glob, time, copy
 from   calendar import timegm
 
 sys.path += [ os.path.join(os.path.dirname(__file__), "../src") ]
@@ -128,7 +129,11 @@ def writeGpx(root, dstGpx):
   f = file(dstGpx, "w"); f.write(out); f.close()
 
 
-def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
+def brgname(brg):
+  BRGNAMES = [ "N", "NE", "E", "SE", "S", "SW", "W", "NW" ]
+  return BRGNAMES[int((brg+22.5+180.0)/45) % 8]
+  
+def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None, makebidi=False):
   sroot = gpx # gpx.getroot()
   root  = ET.Element("{%s}lmx"%LMX_NS)
   root.set("{%s}schemaLocation"%XMLN_NS,  LMX_XSD)
@@ -204,11 +209,13 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
       if acc!= None: ET.SubElement(co,   "{%s}verticalAccuracy"%LMX_NS).text=acc
       cr = ET.SubElement(lm,   "{%s}coverageRadius"%LMX_NS)
       cr.text = "%.1f" % rad
-      if directional:
+      if directional or makebidi:
         ai = ET.SubElement(lm, "{%s}addressInfo"%LMX_NS)
         # HACK ALERT:  lmx format doesn't allow for import or export of heading
         di = ET.SubElement(ai, "{%s}phoneNumber"%LMX_NS)
-        di.text = "hdg:%d" % int(bearing(pt1, pt2))
+        brg = int(bearing(pt1, pt2))
+        if not directional: nm.text += " %s" % brgname(brg)
+        di.text = "hdg:%d" % brg
         ai.tail = "\n      "
       for cat in [ name ] + addtlCat:
         ca = ET.SubElement(lm,   "{%s}category"%LMX_NS);
@@ -221,6 +228,16 @@ def makeLandmarks(gpx, dstLmx=None, addtlCat=["Speed"], maxrad=None):
       cr.tail = "\n      "; ca.tail = "\n    ";
       lm.text = "\n      "; lm.tail = "\n    "
     
+      if not directional and makebidi:
+        # lm180 = ET.SubElement(coll, "{%s}landmark"%LMX_NS)
+        lm180 = copy.deepcopy(lm)
+        nm = lm180.find("{%s}name"%LMX_NS)
+        brg = int(bearing(pt2, pt1))
+        nm.text = desc + (" %s" % brgname(brg))
+        di = lm180.find("{%(ns)s}addressInfo/{%(ns)s}phoneNumber"%{"ns":LMX_NS})
+        di.text = "hdg:%d" % brg
+        coll.append(lm180)
+
       if next < 0:
         break
       else:
@@ -296,9 +313,6 @@ def synthesizeDate(gpx, filename):
   ts = isoformat(timegm(time.strptime("".join(sp[1:])+"UTC", "%Y%m%d%H%M%S%Z")))
   gpx.find("metadata/time").text = ts
 
-def synthesizeDirection(gpx, force=False):
-  pass
-  
 def loadGpx(fn, postprocess=True):
   gpx = ET.parse(fn)
   root = gpx.getroot()
@@ -314,7 +328,7 @@ def loadGpx(fn, postprocess=True):
       synthesizeNames(root)
   return root
   
-def extractBabelPath(fn, fmt="kml"):
+def extractBabelTrack(fn, fmt="kml"):
   tmpfn = "extract.tmp.gpx"
   rc = os.system(BABEL+' -p "" -w -i %s -f "%s" -o gpx,gpxver=1.1 -F "%s"' %\
                  (fmt, fn, tmpfn))
@@ -325,7 +339,6 @@ def extractBabelPath(fn, fmt="kml"):
     fixTime(gpx)
     addCenters(gpx)
     synthesizeNames(gpx)
-    synthesizeDirection(gpx, force=(fmt=="lmx"))
     return gpx
   finally:
     os.remove(tmpfn)
@@ -377,8 +390,8 @@ def main(argv=None):
   op = optparse.OptionParser(usage="extractmarks <input>... [options]")
   op.add_option("-o", "--outfile",   "--gpx", )
   op.add_option("-l", "--landmarks", "--lmx")
-  op.add_option("-i", "--load", "--marks", action="append", metavar="PARSEDGPX")
   op.add_option("-m", "--maxrad",  type="int", help="maximum coverage radius")
+  op.add_option("-b", "--makebidi", action="store_true", default=False, help="Make two directional landmarks from non-directional marks")
   
   opts, args = op.parse_args()
 
@@ -401,8 +414,8 @@ def main(argv=None):
     ext = ext.lower()
     if dflt == None: dflt = os.path.basename(name)
     if   ext == ".gpx": gpxs += [ loadGpx(fn) ]
-    elif ext == ".lmx": gpxs += [ extractBabelPath(fn, fmt="lmx") ]
-    elif ext == ".kml": gpxs += [ extractBabelPath(fn, fmt="kml") ]
+    elif ext == ".lmx": gpxs += [ extractBabelTrack(fn, fmt="lmx") ]
+    elif ext == ".kml": gpxs += [ extractBabelTrack(fn, fmt="kml") ]
     else:               raise ValueError, "Unknown input filetype '%s'" % fn
     fns[gpxs[-1]] = fn
   
@@ -421,7 +434,7 @@ def main(argv=None):
     writeGpx(out, opts.outfile)
 
   if opts.landmarks:
-    makeLandmarks(out, opts.landmarks, maxrad=opts.maxrad)
+    makeLandmarks(out, opts.landmarks, maxrad=opts.maxrad, makebidi=opts.makebidi)
 
   return
   
