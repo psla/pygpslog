@@ -182,6 +182,7 @@ class GpsLog(object):
     self.dest    = None
     self.gpson   = False
     self.markers = gpslogimg.MARKERS
+    self.markcat = gpslogimg.MARKERCAT
     self.prevmark= None
     self.warned  = False
     self.lmdb    = None
@@ -216,6 +217,7 @@ class GpsLog(object):
     try:
       gpslogimg.addIcons(os.path.join(self.settings.logdir, "icons"))
       self.markers = gpslogimg.MARKERS
+      self.markcat = gpslogimg.MARKERCAT
     except Exception, exc:
       appuifw.note(u"Error loading icons: %s" % str(exc), "error")
     
@@ -900,8 +902,8 @@ class GpsLog(object):
             nearest = [ (self.dest, None) ] + nearest
           self.nearest = nearest
         except:
+          self.nearest = [(Waypoint(["Error in landmarks!", 0.0, 0.0]+10*[None]+[{"categories": ["GPS Log"]}]), None)]
           if DEBUG: raise
-          self.nearest = []
         if cputime: self.thperf += cputime()
         
       if lat != None and lon != None and self.lmsettings.dispcat != []: # may have become invalid
@@ -1148,7 +1150,9 @@ class GpsLog(object):
       if active == self.markers[no]: # toggle
         return
 
-    
+    if not self.markers[no]:
+      return
+
     self.marker   = (self.markers[no], self.gps.position)
     self.markcnt += 1
 
@@ -1180,8 +1184,8 @@ class GpsLog(object):
           if directional:
             wpt.hdg = int(bearing(self.marker[1], pos))
           categories = [] 
-          for c in [mark, mark.split()[0]]:
-            if not c in categories and c in self.lmsettings.catnames:
+          for c in [mark, self.markcat]:
+            if c and not c in categories and c in self.lmsettings.catnames:
               categories += [c]
           categories = [ self.lmsettings.cat(c)[1] for c in categories ]
           gpsloglm.CreateLm(wpt, name=mark +  " - " + isoformat(tm), desc=mark,

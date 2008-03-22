@@ -45,9 +45,12 @@ if landmarks != None:
     global ICON_DEF, ICONS
     for name in icons:
       ico = icons[name].mifIcon()
-      if ico != None:
+      if name not in ICONS:
         ICON_DEF += [ (name, None) ]
+      if ico != None:
         ICONS[name] = ico
+      elif name not in ICONS:
+        ICONS[name] = (ICONFILE, ICON_DEF[0][1], ICON_DEF[0][1])
 
   def OpenDb(uri=LANDMARK_DB, create=False):
     if uri != None:
@@ -340,6 +343,8 @@ if landmarks != None:
       
       self.dispcat = unicode(repr(self.dispcat))
 
+      self.upd = abs(self.upd)
+
     ##########################################################################
     def __loadCat(self):
       self.categories = [ ("(None)", landmarks.KPosLmNullGlobalCategory), # :-)) == 0
@@ -440,6 +445,7 @@ if landmarks != None:
         
       del prog
 
+      self.__loadCat()
       appuifw.note(u"Please close and re-open Landmark settings", "conf")
     
     ##########################################################################
@@ -465,6 +471,7 @@ if landmarks != None:
         try:
           gpslogutil.GpsLogBaseSettings.execute_dialog(self, menu)
         except:
+          if e32.in_emulator(): raise
           self.reset()
           self.__init__()
           self.save()
