@@ -166,6 +166,8 @@ class Waypoint(list):
              "speed","hdg", "fix", "hdop","vdop", "pdop",
              "hacc", "vacc", "attr" ]
   
+  position = property(lambda self: (self.lat, self.lon))
+
   def __idx(self, name):
     if not name in self.FIELDS:
       raise AttributeError, name
@@ -188,6 +190,7 @@ class Waypoint(list):
 
   def bearing(self, other):
     return bearing((self.lat, self.lon), other)
+
 
 class GpsLogfile(object):
   def __init__(self, logname=None, logdir=DEF_LOGDIR, ext=".log"):
@@ -235,6 +238,9 @@ class GpsLogfile(object):
   def starttime(self):
     return self.ts
 
+  def close(self):
+    pass
+
 class OziLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,
                extended=True, comment="", **_rest):
@@ -256,7 +262,8 @@ Reserved 3
   def format(self, gps, skipped=0):
     super(OziLogfile, self).format(gps, skipped)
     seg = str(int(skipped != 0))
-    if gps.alt != None: alt = int(gps.corralt * METERS_TO_FEET)
+    alt = (hasattr(gps, "corralt") and gps.corralt) or gps.alt
+    if gps.alt != None: alt = int(alt * METERS_TO_FEET)
     else:               alt = -777
     lat, lon, alt = ("%.6f"%gps.lat, "%.6f"%gps.lon, "%d" % alt)
     ozitime = ("%13.7f" % ((gps.time / SECONDS_PER_DAY) + DAYS_SINCE_1990)).replace(" ","")
@@ -269,6 +276,7 @@ Reserved 3
     self.file.write(",".join([lat,lon,seg,alt,ozitime,fmtdate,fmttime])+"\n")
     
   def close(self):
+    
     self.file.close()
     
     if self.tracks() == 0:
@@ -282,10 +290,12 @@ Reserved 3
       f.write(plt)
       f.close()
 
+    super(OziLogfile, self).close()
 
 class GpxLogfile(GpsLogfile):
   def __init__(self, logname=None, logdir=DEF_LOGDIR,
-               extended=True, satellites=True, comment="", **_rest):
+               extended=True, satellites=True,
+               comment="", startTrack=True, **_rest):
 
     super(GpxLogfile, self).__init__(logname=logname, logdir=logdir, ext=".gpx")
     
@@ -314,19 +324,24 @@ class GpxLogfile(GpsLogfile):
     self.gpx.data(isoformat(self.ts))
     self.gpx.end("time")
     self.gpx.end("metadata")
-    self.gpx.start("trk")
-    self.gpx.start("trkseg")
+    
+    if startTrack:
+      self.gpx.start("trk")
+      self.gpx.start("trkseg")
 
-  def format(self, gps, skipped=0, name=None, attr=None):
+  def format(self, gps, skipped=0, name=None, attr=None, isWaypoint=False):
     super(GpxLogfile, self).format(gps, skipped)
     
     if skipped:
       self.gpx.end("trkseg")
       self.gpx.start("trkseg")
 
-    self.gpx.start("trkpt", lat="%.9f"%gps.lat, lon="%.9f"%gps.lon)
+    tag = (not isWaypoint and "trkpt") or "wpt"
+
+    self.gpx.start(tag, lat="%.9f"%gps.lat, lon="%.9f"%gps.lon)
     if gps.alt != None:
-      self.gpx.start("ele");  self.gpx.data("%.6f"%gps.corralt); self.gpx.end()
+      alt = (hasattr(gps, "corralt") and gps.corralt) or gps.alt
+      self.gpx.start("ele");  self.gpx.data("%.6f"%alt); self.gpx.end()
     self.gpx.start("time"); self.gpx.data(isoformat(gps.time)); self.gpx.end()
     if name:
       self.gpx.start("name"); self.gpx.data(name); self.gpx.end()
@@ -334,7 +349,8 @@ class GpxLogfile(GpsLogfile):
       self.gpx.start("cmt"); self.gpx.data("Skipped %d trackpoints!" % skipped); self.gpx.end()
 
     if self.extended:
-      if gps.sat != None:
+      sat = (hasattr(gps, "sat") and gps.sat) or None
+      if sat != None:
         self.gpx.start("sat");  self.gpx.data(str(gps.nsat)); self.gpx.end()
       if gps.fix != None:
         self.gpx.start("fix")
@@ -357,7 +373,6 @@ class GpxLogfile(GpsLogfile):
         self.gpx.start("gpslog:hacc");  self.gpx.data("%.1f"%gps.hacc); self.gpx.end()
       if gps.vacc != None:
         self.gpx.start("gpslog:vacc");  self.gpx.data("%.1f"%gps.vacc); self.gpx.end()
-      sat = gps.sat
       if self.satellites and sat != None:
         for s in sat:
           self.gpx.start("gpslog:sat",
@@ -377,7 +392,7 @@ class GpxLogfile(GpsLogfile):
     if self.extended or attr:
       self.gpx.end("extensions")
 
-    self.gpx.end("trkpt")
+    self.gpx.end(tag)
 
   def waypoint(self, gps, name=None, attr=None):
     wpt = super(GpxLogfile, self).waypoint(gps, name, attr)
@@ -390,14 +405,92 @@ class GpxLogfile(GpsLogfile):
       self.gpx.comment("Summary:")
       self.gpx.comment("Trackpoints: %d" % self.tracks())
       self.gpx.comment("Distance:    %.1fkm" % (self.distance()/1000.0))
+      chklen = "Chklen: %09d"
+      chklen = chklen % (self.file.tell() + len(chklen%0) + 10)
+      self.gpx.comment(chklen)
       del self.gpx; self.gpx = None
 
     self.file.close()
     if self.tracks() == 0:
       os.remove(self.name())
 
+    if self.waypoints():
+      name, ext = os.path.splitext(self.name())
+      gpx = GpxLogfile(logname=name+"-wpt"+ext, logdir="", startTrack=False)
+      gpx.ts = self.ts
+
+      for wpt in self.waypoints():
+        gpx.format(wpt, name=wpt.name, attr=wpt.attr, isWaypoint=True)
+      gpx.close()
+
+    super(GpxLogfile, self).close()
+
+def mergeWaypoints(gpxfile, progresscb=None):
+  if gpxfile.lower().endswith("-wpt.gpx"): return False
+  if not os.path.exists(gpxfile): return False
+  name, ext = os.path.splitext(gpxfile)
+  wptfile = name+"-wpt.gpx"
+  trkfile = name+"-trk.gpx"
+  if not os.path.exists(wptfile): return True 
+  if os.path.exists(trkfile): return False
+  st = os.stat(gpxfile)
+  os.rename(gpxfile, trkfile)
+  out = file(gpxfile, "wb"); itk = file(trkfile, "rb"); iwp = file(wptfile, "rb")
+  
+  try:
+    try:
+      itk.seek(0,2); tot = itk.tell(); itk.seek(0)
+      # K.I.S.S
+      for tl in itk:
+        if tl.startswith("<!-- Chklen:"): break
+        out.write(tl)
+        if tl.strip() == "</metadata>":
+          skip = True
+          for wl in iwp:
+            if wl.strip() == "</gpx>":       skip = True
+            if not skip:                     out.write(wl)
+            if wl.strip() == "</metadata>":  skip = False
+        if progresscb and tl.strip().startswith("<trkpt"):
+          progresscb(itk.tell() * 100 / tot)
+      tlen = itk.tell(); wlen = iwp.tell()
+    finally:
+      out.close(); itk.close(); iwp.close()
+    
+    def checkfile(fl, cl):
+      if not cl.startswith("<!-- Chklen:"): return False
+      try:   l = int(cl.split(':')[1].split()[0].strip('0'))
+      except: return False
+      return l == fl
+
+    # if files have been tampered with, leave the by-products
+    if checkfile(tlen, tl) and checkfile(wlen, wl):
+      out = file(gpxfile, "ab")
+      out.seek(0, 2)
+      chklen = "<!-- Chklen: %09d -->\n"
+      chklen = chklen % (out.tell() + len(chklen%0))
+      out.write(chklen)
+      out.close()
+
+      os.remove(trkfile)
+      os.remove(wptfile)
+      
+      # this, unfortunately, doesn't have any effects on symbian!
+      os.utime(gpxfile, (st.st_atime, st.st_mtime))
+
+  except:
+    os.remove(gpxfile)
+    os.rename(trkfile, gpxfile)
+    raise
+    return False
+
+  return True
+    
+    
 if SYMBIAN:
-  class GpsLogSettings(settings.Settings):
+  import e32, appuifw, graphics, topwindow
+
+  #############################################################################
+  class GpsLogBaseSettings(settings.Settings):
     def __init__(self, desc_list, fname):
       self.ext_desc_list = desc_list
       dl = []; self.hide = {}
@@ -434,3 +527,124 @@ if SYMBIAN:
         os.remove(self.fname+".e32dbm")
       self.__init__(self.ext_desc_list, os.path.basename(self.fname))
     
+  #############################################################################
+  class GpsLogSettings(GpsLogBaseSettings):
+      pass
+
+  class ProgressDialog(object):
+    DEFAULT_FONT = (not e32.in_emulator() and "normal") or "dense"
+    
+    def __init__(self, title="Please wait...", text="",
+                       fgcolor=0xffffff, bgcolor=0x000000, progcolor=0x00ff000,
+                       font=DEFAULT_FONT, progbar=True, progtext=False):
+
+      (w, hm), (x, y) = appuifw.app.layout(appuifw.EMainPane)
+      w -= 4; x += 2; h  = hm / 3; y  = hm - 20
+
+      self.tw      = topwindow.TopWindow()
+      self.__title = graphics.Image.new((w*2/3, h/3))
+      self.__text  = graphics.Image.new((w, h/3))
+      self.font    = font
+      self.fgcolor = fgcolor
+      self.bgcolor = bgcolor
+      self.progcolor = progcolor
+      self.tw.position, self.tw.size        = (x,y), (w,h)
+      self.tw.shadow,   self.tw.corner_type = 2, "corner2"
+      self.tw.background_color              = bgcolor
+      
+      self.ctlpos = {}
+
+      mt = self.__title.measure_text(u"MM", font=self.font)[0]
+      self.toffs = mt[3] - mt[1] + 4
+      
+      self.__set(self.__title, title, (0,0))
+      self.__set(self.__text,  text,  (0, h/3))
+
+      if progbar:
+        self.__prog  = graphics.Image.new((w-6, h/3-6))
+        self.__prog.clear(self.bgcolor)
+        self.__prog.rectangle(((2,2),(w-6-2,h/3-6-2)), outline=self.fgcolor, fill=self.bgcolor)
+        self.tw.add_image(self.__prog, (3, h*2/3+3))
+        self.ctlpos[self.__prog] = (3, h*2/3+3)
+      else:
+        self.__prog  = None
+
+      if progtext:
+        self.__ptext = graphics.Image.new((w/3, h/3))
+        self.__set(self.__ptext,  "",    (w*2/3, 0))
+      else:
+        self.__ptext = None
+        
+    def __set(self, ctl, text, pos=None):
+      if pos != None: self.ctlpos[ctl] = cpos = pos
+      else:           cpos = self.ctlpos[ctl]
+      
+      ctl.clear(self.bgcolor)
+      ctl.text((2,self.toffs), unicode(text), font=self.font, fill=self.fgcolor)
+      if pos == None:
+        self.tw.remove_image(ctl)
+      self.tw.add_image(ctl, cpos)
+      e32.ao_yield()
+
+    def setProgress(self, prog):
+      if self.__ptext:
+        self.__set(self.__ptext, "%d%%" % prog)
+      if self.__prog:
+        (w,h) = self.__prog.size
+        prog = (w-6) * prog / 100
+        self.__prog.rectangle(((3,3),(prog,h-3)), self.progcolor, fill=self.progcolor)
+        self.tw.remove_image(self.__prog)
+        self.tw.add_image(self.__prog, self.ctlpos[self.__prog])
+        e32.ao_yield()
+
+    text      = property(None, lambda self, txt: self.__set(self.__text, txt))
+    progress  = property(None, setProgress)
+
+    def show(self):
+      self.tw.show()
+
+    def hide(self):
+      self.tw.hide()
+
+    def destroy(self):
+      self.hide()
+      if self.tw != None:
+        while self.tw.images:
+          self.tw.remove_image(self.tw.images[0][0])
+        del self.tw; self.tw = None
+    
+    def __del__(self):
+      self.destroy()
+      
+  #############################################################################
+  def mergeAllGpx(logdir):
+    prog = ProgressDialog("Merging...")
+    prog.show()
+
+    try:
+      for f in os.listdir(logdir):
+        name, ext = os.path.splitext(f)
+        if name.lower().endswith("-wpt") or name.lower().endswith("-trk") or\
+           ext.lower() != ".gpx":
+          continue
+
+        prog.text = name
+
+        success = mergeWaypoints(os.path.join(logdir, f), prog.setProgress)
+
+        if not success:
+          prog.hide()
+          rc = appuifw.query(u"%s failed to merge! Continue?" % name, "query")
+          if not rc: break
+          prog.show()
+        elif os.path.exists(os.path.join(logdir, name+"-trk.gpx")):
+          prog.hide()
+          rc = appuifw.query(u"%s has been edited. Original files kept! Continue?" % name, "query")
+          if not rc: break
+          prog.show()
+          
+    finally:
+      del prog
+
+    appuifw.note(u"All done!")
+
