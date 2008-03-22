@@ -265,7 +265,7 @@ if landmarks != None:
     return res
   
 
-  class LandmarkSettings(gpslogutil.GpsLogSettings):
+  class LandmarkSettings(gpslogutil.GpsLogBaseSettings):
 
     catnames = property(lambda self: [ c[0] for c in self.categories ])
     catids   = property(lambda self: [ c[1] for c in self.categories ])
@@ -294,7 +294,7 @@ if landmarks != None:
       ]
       self.ONOFFS   = [ "wptlm", "marklm", "lmedit", "lmico", "smico", "warnvib" ]
     
-      gpslogutil.GpsLogSettings.__init__(self, desc, "gpsloglm.settings")
+      gpslogutil.GpsLogBaseSettings.__init__(self, desc, "gpsloglm.settings")
       self.__apply()
       
     ##########################################################################
@@ -422,14 +422,21 @@ if landmarks != None:
 
     ##########################################################################
     def addDefCat(self):
+      prog = gpslogutil.ProgressDialog()
+      prog.show()
+      tot = len(ICON_DEF)-1; i = 0
       try:
         for nm, icon in ICON_DEF[1:]:
+          prog.text = nm; prog.progress = i * 100 / tot; i += 1
           if not nm in self.catnames:
             CreateCat(nm, nm)
           SetCatIcons(nm)
       except Exception, exc:
+        prog.hide()
         appuifw.note(u"An error occurred: %s" % str(exc), "error")
         
+      del prog
+
       appuifw.note(u"Please close and re-open Landmark settings", "conf")
     
     ##########################################################################
@@ -453,13 +460,13 @@ if landmarks != None:
         oldwarn = self.warncat
 
         try:
-          gpslogutil.GpsLogSettings.execute_dialog(self, menu)
+          gpslogutil.GpsLogBaseSettings.execute_dialog(self, menu)
         except:
           self.reset()
           self.__init__()
           self.save()
           appuifw.note(u"Settings have been reset (new version?)", "error")
-          gpslogutil.GpsLogSettings.execute_dialog(self, menu)
+          gpslogutil.GpsLogBaseSettings.execute_dialog(self, menu)
         
         if self.lmico == "on":
           rc = appuifw.query(u"Icons are an experimental feature! Enable?", "query")
@@ -532,7 +539,7 @@ if landmarks != None:
     ##########################################################################
     def save(self):
       self.__cnvt()
-      gpslogutil.GpsLogSettings.save(self)
+      gpslogutil.GpsLogBaseSettings.save(self)
       self.__apply()
 
 
