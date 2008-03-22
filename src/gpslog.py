@@ -1382,7 +1382,6 @@ class GpsLog(object):
                       
     self.logn = None
 
-    
   ############################################################################
   def startGps(self):
     try:
@@ -1472,10 +1471,16 @@ class GpsLog(object):
     if self.stopping: return
     appuifw.app.menu[0] = (u"(Stopping...)", self.stop)
     self.stopping = True
-    self.markOut(display=False)
-    if self.gps != None and (not self.gpson or closeGps):
-      self.stopGps()
-    self.closeLog()
+    try:
+      self.markOut(display=False)
+      if self.gps != None and (not self.gpson or closeGps):
+        self.stopGps()
+      self.closeLog()
+    except Exception, exc:
+      appuifw.note(u"Logfile closing failed: %s" % str(exc), "error")
+      del self.log; self.log = None
+      if DEBUG: self.stopping = False; raise
+
     self.stopping = False
     self.markcnt  = 0
     appuifw.app.menu[0] = (u"Start", self.start)
@@ -1606,17 +1611,34 @@ class GpsLog(object):
     logfmt   = self.settings.logfmt
     
     SETTINGS_HELP="""Set 'Choose New Bluetooth'
-device to true, if your GPS
-is out of reach.
+device to 'on', if your
+GPS is out of reach.
+
+'Merge GPX Tracks+Wpts'
+merges all Waypoint files
+in your log directory
+to their track files.
 """
 
     def help():
       appuifw.popup_menu([unicode(l) for l in SETTINGS_HELP.splitlines()],
                          u"Settings Help")
 
-    menu = [ (u"Help", help) ]
+    locks = []
+
+    def merge():
+      if self.log != None:
+        appuifw.note(u"Please close your logfile first!", "error")
+        return
+      locks.append(e32.Ao_lock())
+      mergeAllGpx(self.settings.logdir)
+      locks[0].signal()
+
+    menu = [ (u"Merge GPX Tracks+Wpts", merge), (u"Help", help) ]
+
     try:
       self.settings.execute_dialog(menu=menu)
+      if locks: locks[0].wait() # TODO: doesn't really help
     except:
       self.settings.reset()
       self.initializeSettings(msg="Settings have been reset. (New version?)")
