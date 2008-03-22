@@ -31,6 +31,7 @@ You simply create a directory `'icons'` in your log file directory (see
 Bluetooth tool, and copy the file there. Voilà!
 
 If you don't care about icons, see [#Finish_the_Job Finish the Job]!
+
 *Note:*
  * The names are _case sensitive_.
  * The MARKERS list must have _exactly_ six elements!
