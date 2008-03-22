@@ -78,15 +78,16 @@ class Settings:
           dlg.menu = menu
 
         # build dialog fields
-        n=0
-        for (name,tp,lst,value) in self.desc_list:
+        n=0; forcechg = False
+        for (name,tp,lst,defvalue) in self.desc_list:
           if name in self.disp:
             disp=self.disp[name]
           else:
             disp = name
           if tp == 'combo': 
             value = eval("self."+name)
-            x = lst.index(value)
+            try: x = lst.index(value)
+            except ValueError: x = lst.index(defvalue); forcechg = True
             dlg.insert(n,(unicode(disp),'combo', (lst,x) ))
           else:
             dlg.insert(n,(unicode(disp),tp,eval("self."+name)))
@@ -100,6 +101,9 @@ class Settings:
         
         dlg.execute()
         
+        if forcechg:
+          self.settings_changed = True
+
         appuifw.app.screen = scr
 
         appuifw.app.title = saved_title
