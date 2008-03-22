@@ -260,14 +260,22 @@ class OziLogfile(GpsLogfile):
 
     if comment: comment = " ("+comment+")"
     
-    self.file = file(self.name(), "w")
-    self.file.write("""OziExplorer Track Point File Version 2.1
-WGS 84
-Altitude is in Feet
-Reserved 3
-0,2,255,S60 GpsLog%s,0,0,2,8421376
-<numtrk>
+    self.file = file(self.name(), "wb")
+    self.file.write("""OziExplorer Track Point File Version 2.1\r
+WGS 84\r
+Altitude is in Feet\r
+Reserved 3\r
+0,2,255,S60 GpsLog%s,0,0,2,8421376\r
+<numtrk>\r
 """ % comment)
+
+    self.wpts = file(self.name().replace(".plt", ".wpt"), "wb")
+    self.wpts.write("""OziExplorer Waypoint File Version 1.1\r
+WGS 84\r
+Reserved 2\r
+Reserved 3\r
+""")
+
     self.extended = extended
 
   def format(self, gps, skipped=0):
@@ -284,12 +292,27 @@ Reserved 3
       fmtdate = time.strftime("%d-%b-", ts)+ time.strftime("%Y",ts)[-2:]
     else:
       fmttime = fmtdate = ""
-    self.file.write(",".join([lat,lon,seg,alt,ozitime,fmtdate,fmttime])+"\n")
+    self.file.write(",".join([lat,lon,seg,alt,ozitime,fmtdate,fmttime])+"\r\n")
+    
+    
+  def waypoint(self, gps, name=None, attr=None):
+    wpt = super(OziLogfile, self).waypoint(gps, name, attr)
+
+    if wpt.time != None: ozitime = ("%13.7f" % ((wpt.time / SECONDS_PER_DAY) + DAYS_SINCE_1990)).replace(" ","")
+    else:                ozitime = ""
+    if wpt.alt  != None: alt = int(wpt.alt * METERS_TO_FEET)
+    else:                alt = -777
+    self.wpts.write("%d,%s,%.6f,%.6f,%s,219,1,3,0,65535,"\
+                    "%s,0,0,0,%d,10,0,17\r\n"% (
+                    len(self.waypoints()), wpt.name, wpt.lat, wpt.lon,ozitime,
+                    wpt.name, alt))
+    return wpt
     
   def close(self):
     
     self.file.close()
-    
+    self.wpts.close()
+
     if self.tracks() == 0:
       os.remove(self.name())
     else:
@@ -301,6 +324,9 @@ Reserved 3
       f.write(plt)
       f.close()
 
+    if not self.waypoints():
+      os.remove(self.name().replace(".plt", ".wpt"))
+      
     super(OziLogfile, self).close()
 
 ###############################################################################
