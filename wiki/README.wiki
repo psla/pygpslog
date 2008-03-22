@@ -37,6 +37,7 @@ It's features include
   * Easy marking of waypoints (with or without confirmation).
   * Easy marking of six different track segment types (e.g. speed limits).
   * The usual: Data view, Satellite View, Compass View...
+  * Simultaneous logging and navigation (e.g. with Nokia Maps).
   * Integration with Nokia's landmarks.
 
 But best see the [README#SCREENSHOTS Screenshots] below.
@@ -193,9 +194,10 @@ If the Landmarks module is [#INSTALLATION installed], and the option is
 is added.
 
 === Track Segments ===
-There are six different segment types. Their default names are:
+There are six different segment-marker categories. Their default names are:
 `"Speed 30", "Speed 50", "Speed 60", "Speed 70", "Speed 80"` and `"Speed 100"`.
-(This will be configurable in the future).
+
+If you want to configure these markers yourself, please read about UserIcons.
 
 The segments are activated by pressing one of the number keys from `'4'` to `'9'`.
 To end a segment press the same key again or press the '`*'`-key.
@@ -210,8 +212,9 @@ radius of half the distance and intersects the end points.
 
 By default these landmarks are directional, i.e. notifications only take
 place if you're going roughly in the same direction as the landmark.
-If you want to change this, you have to [extractmarks extract and edit]
-the segments then write the landmarks back to the device.
+If you want to change this, you have to save your tracks in GPX format,
+[extractmarks extract and edit] the segments and then write the landmarks
+back to the device.
 
 === Display Modes ===
 To save battery, information display is usually only active if logging is switched on.

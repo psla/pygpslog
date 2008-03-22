@@ -16,14 +16,42 @@ to match them. If somebody would send me a S60 phone in their language,
 I'd even be prepared to do it for them ;-)
 
 = How =
+=== The Track Segment Markers ===
+You need a definition file to describe the categories for the markers. Suppose
+you will have a definition file called `'myicons.def'` (the name _must_ end
+with `'.def'`), that looks like this:
+{{{
+MARKERS    = [ "Offroad",  "Rough",     "Bumpy",
+               "Smooth",   "Racetrack", "Runway" ]
+MARKERCAT  = "Road Quality"
+}}}
+
+You simply create a directory `'icons'` in your log file directory (see
+[README#SETTINGS SETTINGS]), using your favorite S60 file manager or
+Bluetooth tool, and copy the file there. Voilà!
+
+*Note:*
+ * The names are _case sensitive_.
+ * The MARKERS list must have _exactly_ six elements!
+ * MARKERCAT will additionally be assigned to [README#Landmarks landmarks] if [README#INSTALLATION installed].
+ * Both MARKERS and MARKERCAT are optional, if you only want to create new icon sets.
+
 === The Landmarks List in !PyGpsLog ===
-This is fairly simple. All you need is a JPEG or PNG file with your icons and
+This is still fairly simple. All you need is a JPEG or PNG file with your icons and
 their transparency masks. Icons and their masks must be 64 x 64 pixels in size,
 each row of the image contains two pairs of mask and icon. Masks may either be
 black and white or gray scale, with white marking the opaque parts. It should
 look like this:
 
 http://pygpslog.googlecode.com/svn/trunk/src/gpslogico.jpg
+
+There is even a little script,
+[http://code.google.com/p/pygpslog/source/browse/trunk/mkiconset.py mkiconset.py] in
+the source distribution that can do this for you, but you'll probably have to
+be little bit Python-literate as you'll have to change it to match your
+installation. It requires to have a fairly recent version of
+[http://www.imagemagick.org/ ImageMagick] installed.
+
 
 You then need a definition file to describe the categories for the icons. Suppose you
 name the above JPEG `'myicons.jpg'` you will have a definition file `'myicons.def'`
@@ -38,16 +66,7 @@ ICONDEF    = [ "Accomodation",  "Businesses",    "Telecommunicat.",
                "Sightseeing", "Sports", "Transport", "User" ]
 }}}
 
-You simply create a directory `'icons'` in your log file directory (see
-[README#SETTINGS SETTINGS]), using your favorite S60 file manager or Bluetooth tool,
-and copy the two files there. Voilà!
-
-There is even a little script,
-[http://code.google.com/p/pygpslog/source/browse/trunk/mkiconset.py mkiconset.py] in
-the source distribution that can do this for you, but you'll probably have to
-be little bit Python-literate as you'll have to change it to match your
-installation. It requires to have a fairly recent version of
-[http://www.imagemagick.org/ ImageMagick] installed.
+Install the two files like [#The_Track_Segment_Markers above].
 
 === Nokia's Landmarks Database ===
 If you want to add your own categories with your own icons, things get a little bit
