@@ -19,6 +19,8 @@ options:
   -l LANDMARKS, --landmarks=LANDMARKS, --lmx=LANDMARKS
   -m MAXRAD, --maxrad=MAXRAD
                         maximum coverage radius
+  -b, --makebidi        Make two directional landmarks from non-directional
+                        marks
 }}}
 
 So what I'm doing, is to run `extractmarks.py` on all newly recorded [README#GPX GPX]
