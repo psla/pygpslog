@@ -30,6 +30,7 @@ You simply create a directory `'icons'` in your log file directory (see
 [README#SETTINGS SETTINGS]), using your favorite S60 file manager or
 Bluetooth tool, and copy the file there. Voilà!
 
+If you don't care about icons, see [#Finish_the_Job Finish the Job]!
 *Note:*
  * The names are _case sensitive_.
  * The MARKERS list must have _exactly_ six elements!
@@ -68,6 +69,9 @@ ICONDEF    = [ "Accomodation",  "Businesses",    "Telecommunicat.",
 }}}
 
 Install the two files like [#The_Track_Segment_Markers above].
+
+If you do not want to add icons to Nokia's internal landmarks database,
+[#Finish_the_Job Finish the Job]!
 
 === Nokia's Landmarks Database ===
 If you want to add your own categories with your own icons, things get a little bit
@@ -112,7 +116,7 @@ ICONMIF    = "myicons.mif"
 ICONDEF    = [ ("Airports", 0x4000),  ("Train Stations", 0x4002), ("Bus Terminals", 0x4004) ]
 }}}
 
-==== Finish The Job ====
+==== Finish the Job ====
 Every time you change the segment markers or create a new icon set,
 go to [README#Landmarks Landmark Settings] and invoke
 the `Options->Set Icons/Categories` menu. All non-standard categories and
