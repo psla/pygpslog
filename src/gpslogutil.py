@@ -1,3 +1,4 @@
+# -*- coding: latin1 -*-
 import os, sys, time
 import math
 from   math import *
@@ -42,11 +43,30 @@ def coord(c, sign="NS", dec=False):
   else:
     return u"%.6f" % c
 
+def coordFromString(co, sb="NS", rng=(-90.0,90.0)):
+  if isinstance(co, unicode): co = co.encode("latin1")
+  co = co.strip().upper()
+  s = 1.0
+  if   co[0]  in sb: s = (co[0]  == sb[0] and 1.0) or -1.0; co = co[1:]
+  elif co[-1] in sb: s = (co[-1] == sb[0] and 1.0) or -1.0; co = co[:-1]
+  co = co.strip()
+  if '°' in co or '*' in co or ' ' in co:
+    co = co.replace('°',' ').replace('*',' ').replace("'",' ').replace('"', ' ')
+    co = co.split()
+    fco = 0.0; f = 1.0
+    for c in co: fco += f * float(c); f /= 60.0
+    fco = s * fco
+  else:
+    fco = s * float(co)
+  if fco < rng[0] or fco > rng[1]: raise ValueError, "Invalid value"
+  return fco
+  
 def sorted(itrbl):
   ret =itrbl[:]
   ret.sort()
   return ret
   
+
 
 # there seems to be a problem with S60's math library: let's fix it
 if not hasattr(math, "radians"): 
@@ -172,8 +192,8 @@ bearing   = simpleBearing
 ###############################################################################
 class Waypoint(list):
   FIELDS = [ "name", "lat", "lon", "alt", "time",
-             "speed","hdg", "fix", "hdop","vdop", "pdop",
-             "hacc", "vacc", "attr" ]
+             "speed","hdg", "fix", "hdop","vdop",
+             "pdop", "hacc","vacc","attr" ]
   
   position = property(lambda self: (self.lat, self.lon))
 
@@ -224,7 +244,7 @@ class GpsLogfile(object):
       self.dist   += distance(gps.position, self.prev)
     self.prev      = gps.position
     
-  def waypoint(self, gps, name=None, attr=None):
+  def waypoint(self, gps, name=None, attr=None, trkpt=True):
     if name == None: name = "Waypoint %d" % (len(self.waypts)+1)
     alt = (hasattr(gps, "corralt") and gps.corralt) or gps.alt
     self.waypts += [ Waypoint((name, gps.lat,  gps.lon,  alt,  gps.time,
@@ -295,8 +315,8 @@ Reserved 3\r
     self.file.write(",".join([lat,lon,seg,alt,ozitime,fmtdate,fmttime])+"\r\n")
     
     
-  def waypoint(self, gps, name=None, attr=None):
-    wpt = super(OziLogfile, self).waypoint(gps, name, attr)
+  def waypoint(self, gps, name=None, attr=None, trkpt=True):
+    wpt = super(OziLogfile, self).waypoint(gps, name, attr, trkpt)
 
     if wpt.time != None: ozitime = ("%13.7f" % ((wpt.time / SECONDS_PER_DAY) + DAYS_SINCE_1990)).replace(" ","")
     else:                ozitime = ""
@@ -437,9 +457,10 @@ class GpxLogfile(GpsLogfile):
 
     self.gpx.end(tag)
 
-  def waypoint(self, gps, name=None, attr=None):
-    wpt = super(GpxLogfile, self).waypoint(gps, name, attr)
-    self.format(gps, name=wpt[0], attr=attr)
+  def waypoint(self, gps, name=None, attr=None, trkpt=True):
+    wpt = super(GpxLogfile, self).waypoint(gps, name, attr, trkpt)
+    if trkpt:
+      self.format(gps, name=wpt[0], attr=attr)
     if self.wptgpx:
       self.wptgpx.format(wpt, name=wpt.name, attr=wpt.attr, isWaypoint=True)
     return wpt
@@ -502,7 +523,7 @@ def mergeWaypoints(gpxfile, progresscb=None):
     
     def checkfile(fl, cl):
       if not cl.startswith("<!-- Chklen:"): return False
-      try:   l = int(cl.split(':')[1].split()[0].strip('0'))
+      try:   l = int(cl.split(':')[1].split()[0].lstrip('0'))
       except: return False
       return l == fl
 
@@ -667,7 +688,9 @@ if SYMBIAN:
     prog.show()
 
     try:
-      for f in os.listdir(logdir):
+      dirlist = os.listdir(logdir)
+      dirlist.sort() # because S60 ignores os.utime
+      for f in dirlist:
         name, ext = os.path.splitext(f)
         if name.lower().endswith("-wpt") or name.lower().endswith("-trk") or\
            ext.lower() != ".gpx":
