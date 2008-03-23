@@ -1,6 +1,3 @@
-Separate (?) waypoint file for GPX
-Ozi waypoint writing
-
 inline documentation
 
 Low priority:
@@ -9,6 +6,9 @@ Low priority:
   Metric/Imperial
 
 Done:
+0.3.0:
+  Separate (?) waypoint file for GPX
+  Ozi waypoint writing
 0.2.3:
   Restructured landmark search
   Limit Landmark Categories (until I find a way to use Landmark searches properly)

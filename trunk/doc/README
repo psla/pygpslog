@@ -1,5 +1,5 @@
 #summary pygpslog Documentation.
-#labels Featured,Documentation
+#labels Featured,Documentation,Priority-0-High
 == CONTENTS ==
  # [#ABOUT ABOUT]
  # [#WHAT_S_NEW WHAT'S NEW]
@@ -37,6 +37,7 @@ It's features include
   * Easy marking of waypoints (with or without confirmation).
   * Easy marking of six different track segment types (e.g. speed limits).
   * The usual: Data view, Satellite View, Compass View...
+  * Simultaneous logging and navigation (e.g. with Nokia Maps).
   * Integration with Nokia's landmarks.
 
 But best see the [README#SCREENSHOTS Screenshots] below.
@@ -166,6 +167,7 @@ Logging can be started automatically on program startup (see [#SETTINGS SETTINGS
 [http://earth.google.com GoogleEarth], and can be easily manipulated.
 Additionally, !PyGpsLog uses it's [Screenshots#Extended_Format own extensions]
 to store additional data for later analysis.
+
 ===== !OziExplorer =====
 [http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
 used for their `.plt` track files is very compact and by
@@ -184,18 +186,26 @@ using it to create my Landmarks in !GoogleEarth, convert them to LMX and send th
 to my E65.
 
 === Waypoints ===
-The `'#'` key inserts a waypoint into the log file. Currently, this is done
-by inserting a named trackpoint into the GPX file. For !OziExplorer files,
-this doesn't have any effect in this version.
+The `'#'` key inserts a waypoint into the log file.
+For both, [#GPX GPX] and [#OziExplorer OziExplorer] formats, a separate log file
+is created that holds the marked waypoints. The files are named
+`'<Logfile>-wpt.gpx'` and `'<Logfile>.wpt'` respectively.
+
+For [#GPX GPX] files [#General there's an option] to merge the track- and
+waypoint-logfiles into a single file. This is done on request only, because
+according to [#GPX GPX]-syntax, waypoints have to appear before tracks, and
+re-writing a large log file takes _considerable_ time on device
+(see [http://code.google.com/p/pygpslog/issues/detail?id=4 this issue]).
 
 If the Landmarks module is [#INSTALLATION installed], and the option is
 [#Landmarks activated], a Nokia landmark with the current time stamp
 is added.
 
 === Track Segments ===
-There are six different segment types. Their default names are:
+There are six different segment-marker categories. Their default names are:
 `"Speed 30", "Speed 50", "Speed 60", "Speed 70", "Speed 80"` and `"Speed 100"`.
-(This will be configurable in the future).
+
+If you want to configure these markers yourself, please read about UserIcons.
 
 The segments are activated by pressing one of the number keys from `'4'` to `'9'`.
 To end a segment press the same key again or press the '`*'`-key.
@@ -210,8 +220,9 @@ radius of half the distance and intersects the end points.
 
 By default these landmarks are directional, i.e. notifications only take
 place if you're going roughly in the same direction as the landmark.
-If you want to change this, you have to [extractmarks extract and edit]
-the segments then write the landmarks back to the device.
+If you want to change this, you have to save your tracks in GPX format,
+[extractmarks extract and edit] the segments and then write the landmarks
+back to the device.
 
 === Display Modes ===
 To save battery, information display is usually only active if logging is switched on.
@@ -267,6 +278,10 @@ Here's a [Screenshots#Compass screnshot].
  * *Show Battery Meter in Fullscreen*: Default: *on*.
  * *Reset to default settings*: Application will exit after resetting.
 
+The `'Options'` menu of the general settings page holds these commands:
+ * *Save*: Save all settings.
+ * *Merge GPX Tracks+Wpts*: Merges _all_ existing logfiles and their corresponding waypoint files into a single log file.
+
 == Landmarks ==
 The landmark settings are only available if the Landmarks module is [#INSTALLATION installed].
 
@@ -284,7 +299,8 @@ The landmark settings are only available if the Landmarks module is [#INSTALLATI
 These settings are for experimental features:
  * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
 
-The options menu of the landmarks settings page contains some important menu items:
+The `'Options'` menu of the landmarks settings page holds these commands:
+ * *Save*: Save all settings.
  * *Remove Disp. Categories*: Hides categories from the landmarks page. *Careful*: This may eat a lot of battery.
  * *Add Display Categories*: Unless all categories are displayed, the caveat above applies!
  * *Landmark Editor*: Invokes Nokia's Landmark application. (*Caution*: experimental feature!).
