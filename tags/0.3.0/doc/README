@@ -1,0 +1,344 @@
+#summary pygpslog Documentation.
+#labels Featured,Documentation,Priority-0-High
+== CONTENTS ==
+ # [#ABOUT ABOUT]
+ # [#WHAT_S_NEW WHAT'S NEW]
+ # [#LICENSE LICENSE]
+ # [#REQUIREMENTS REQUIREMENTS]
+ # [#CONTACT CONTACT]
+ # [#INSTALLATION INSTALLATION]
+ # [#OPERATION OPERATION]
+  # [#Location_Requestor Location Requestor]
+  # [#Generic_NMEA_over_Bluetooth Generic NMEA over Bluetooth]
+  # [#Nokia_Positioning Nokia Positioning]
+ # [#USAGE USAGE]
+  # [#Logging Logging]
+  # [#Waypoints Waypoints]
+  # [#Track_Segments Track Segments]
+  # [#Display_Modes Display Modes]
+  # [#Destination Destination]
+ # [#SETTINGS SETTINGS]
+  # [#General General]
+  # [#Landmarks Landmarks]
+ # [#TROUBLESHOOTING TROUBLESHOOTING]
+  # [#Known_Problems Known Problems]
+  # [#FAQ FAQ]
+ # [#SCREENSHOTS SCREENSHOTS]
+ # [#ACKNOWLEDGEMENTS ACKNOWLEDGEMENTS]
+ 
+= ABOUT =
+[http://code.google.com/p/pygpslog/ pygpslog] is a GPS logger for S60 
+smartphones that uses Nokia's internal location and landmarks API and
+thus can co-exist with other navigation applications (e.g. Nokia Maps)
+running at the same time.
+
+It's features include
+  * Record data in standard [http://www.topografix.com/GPX GPX] or [http://www.oziexplorer.com/ OziExplorer] format.
+  * Easy marking of waypoints (with or without confirmation).
+  * Easy marking of six different track segment types (e.g. speed limits).
+  * The usual: Data view, Satellite View, Compass View...
+  * Simultaneous logging and navigation (e.g. with Nokia Maps).
+  * Integration with Nokia's landmarks.
+
+But best see the [README#SCREENSHOTS Screenshots] below.
+
+= WHAT'S NEW =
+Please see the [History] page.
+
+= LICENSE =
+  see [LICENSES] and [COPYING]
+
+= REQUIREMENTS =
+  * A device running S60 3rd edition.
+  * An internal or external GPS device.
+  * Python for S60, v1.4.2 or higher
+  You may get it from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
+  If you're new to Python on S60 it's probably better to read the
+  [http://wiki.opensource.nokia.com/projects/PyS60 PyS60 Wiki] first.
+  * The [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module (*see below!*).
+  * The [http://www.iyouit.eu/portal/Software.aspx Landmarks] module (*see below!*).
+
+  * All installation files have to be [https://www.symbiansigned.com Symbian Signed] by yourself in order to be really useful. Please see the [README#INSTALLATION DOCUMENTATION]
+
+The !LocationRequestor module above is packaged with an UID that cannot be
+used for Symbian's [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed]
+process. Therefore I'm making a 
+[http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+LocationRequestor re-packaged version]
+available here.
+
+Unfortunately, the Landmarks module, as of Mar. 7, 2008, contains a
+few bugs that prevent it from working with pygpslog. Until I receive word
+from the authors, you may download a
+[http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+Landmarks patched version]
+from this site.
+
+In fact, the !LocationRequestor and Landmarks modules are not _absolutely_
+required to run pygpslog, but the functionality will be severely limited.
+Please see [README#OPERATION below].
+
+= CONTACT =
+Please leave your comments on the [Contact] wiki page. I will be notified by
+e-mail automagically ;-)
+
+= INSTALLATION =
+ # Install Python for S60 from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
+ # If any old version of the !LocationRequestor or Landmarks modules are installed, please uninstall them
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+LocationRequestor LocationRequestor] module.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+Landmarks Landmarks] module.
+ # Get the [http://code.google.com/p/pygpslog/downloads/list?q=label:Featured latest version] of pygpslog.
+ # If you're not yet, make yourself familiar with [https://www.symbiansigned.com Symbian Signed]. The easiest way by now seems to be [https://www.symbiansigned.com/app/page/public/openSignedOnline.do Open Signed Online].
+ # Sign !LocationRequestor, Landmarks and !PyGpsLog. The capabilities required are `ReadUserData, WriteUserData, NetworkServices, LocalServices, UserEnvironment, ReadDeviceData, WriteDeviceData, Location` and `SwEvent`. See SymbianSigned.
+ # Install to your device
+ # Done!
+ 
+Almost: I'd strongly recommend you to download, sign, and install those additional modules:
+ * [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] from this site.
+ * [http://prdownloads.sourceforge.net/pyed/envy_3rd_1_0_4_unsigned.sis?download envy]. Read [http://discussion.forum.nokia.com/forum/showthread.php?t=122897&highlight=envy this post] for a description.
+ * [http://uikludges.googlecode.com/svn/trunk/uikludges.SIS uikludges] from [http://code.google.com/p/uikludges/].
+ * [http://pdis.hiit.fi/pdis/download/miso/miso-1.92-s60_3rd_dev.sis miso] from [http://pdis.hiit.fi/pdis/download/miso/] or [http://cyke64.googlepages.com/misty150_unsigned_dev_certfree.SIS misty] from [http://cyke64.googlepages.com/].
+ These modules give you additional features like a CPU graph, more meaningful dialog menus, vibrating alarm and prevent pygpslog from being accidentally closed by pressing the red key.
+
+I know the signing process is tedious, but this application requires `Location`
+capabilities (`SwEvent` might be needed later). To make things worse,
+Symbian Signed seems to be in the process of changing their signing procedures.
+As of now (Mar. 7, 2008) you're not able to get your own developer certificate
+without a valid Publisher ID. But please check yourself at
+[https://www.symbiansigned.com Symbian Signed].
+
+In the meantime I'll try to keep some SymbianSigned instructions [SymbianSigned updated].
+Please feel free to comment and contribute.
+
+If you _absolutely_ want to avoid Symbian Signed _and_ you have and _external
+Bluetooth_ GPS device, you may skip the installation of !LocationRequestor and
+Landmarks. In this case _you will not be able_ to share the GPS device
+with other applications, and, you cannot use your phone's landmarks in any
+way.
+
+= OPERATION =
+pygpslog can operate in three different modes. Each mode has it's advantages
+and disadvantages. The default mode depends on what you installed during
+the [#INSTALLATION installation process].
+
+=== Location Requestor === 
+(Preferred method, uses 3rd Party Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications.
+ * Very extensive data available.
+ * Works with external or internal GPS devices.
+ * Continues to work, even if Bluetooth connection is lost.
+==== Con's: ====
+ * Requires the [http://www.iyouit.eu/portal/Software.aspx LocationRequestor] module.
+ * Must be Symbian signed
+
+=== Generic NMEA over Bluetooth ===
+==== Pro's: ====
+ * Most extensive (and probably precise) data available.
+ * Can be used without Symbian Signed.
+ * No additional modules required.
+==== Con's ===
+ * Requires an external Bluetooth GPS.
+ * GPS cannot be shared with Nokia Maps, Navigator, mgMaps or others.
+ 
+=== Nokia Positioning === 
+(uses standard Python module)
+==== Pro's: ====
+ * GPS can be shared with other applications.
+ * Works with external or internal GPS devices.
+ * No additional modules required.
+==== Con's: ====
+ * Severely limited data (no satellite info, ...).
+ * Must be Symbian signed.
+  
+= USAGE =
+
+=== Logging ===
+The `'Yes'` (Green) key starts and stops the GPS logger. Every restart
+creates a new log file in the [#SETTINGS configured] data directory (default:
+`C:\Data\GpsLog` or `E:\Data\GpsLog`).
+
+The `'C'` (Backspace) key pauses the logging operation.
+
+Logging can be started automatically on program startup (see [#SETTINGS SETTINGS]).
+
+!PyGpsLog can store it's log files in two different formats:
+===== GPX =====
+[http://www.topografix.com/GPX GPX] is a format used by a
+[http://www.topografix.com/gpx_resources.asp lot of devices and applications], including
+[http://earth.google.com GoogleEarth], and can be easily manipulated.
+Additionally, !PyGpsLog uses it's [Screenshots#Extended_Format own extensions]
+to store additional data for later analysis.
+
+===== !OziExplorer =====
+[http://www.oziexplorer.com/ OziExplorer] is a powerful GPS mapping software. The format
+used for their `.plt` track files is very compact and by
+[Screenshots#OziExplorer far enough] to store basic trackpoint data.
+
+So, if you're low on memory use this format.
+
+===== GPSBabel =====
+One word for [http://www.gpsbabel.org/ GPSBabel]: Depending on the information you need,
+it doesn't really matter which format you use. You can alway use
+[http://www.gpsbabel.org/ GPSBabel] to convert from one format into almost any other.
+
+From [http://www.gpsbabel.org/downloads.html version 1.3.5 beta] on, GPSBabel can
+create Nokia LMX landmark files that can be sent via Bluetooth to your device. So I'm
+using it to create my Landmarks in !GoogleEarth, convert them to LMX and send them
+to my E65.
+
+=== Waypoints ===
+The `'#'` key inserts a waypoint into the log file.
+For both, [#GPX GPX] and [#OziExplorer OziExplorer] formats, a separate log file
+is created that holds the marked waypoints. The files are named
+`'<Logfile>-wpt.gpx'` and `'<Logfile>.wpt'` respectively.
+
+For [#GPX GPX] files [#General there's an option] to merge the track- and
+waypoint-logfiles into a single file. This is done on request only, because
+according to [#GPX GPX]-syntax, waypoints have to appear before tracks, and
+re-writing a large log file takes _considerable_ time on device
+(see [http://code.google.com/p/pygpslog/issues/detail?id=4 this issue]).
+
+If the Landmarks module is [#INSTALLATION installed], and the option is
+[#Landmarks activated], a Nokia landmark with the current time stamp
+is added.
+
+=== Track Segments ===
+There are six different segment-marker categories. Their default names are:
+`"Speed 30", "Speed 50", "Speed 60", "Speed 70", "Speed 80"` and `"Speed 100"`.
+
+If you want to configure these markers yourself, please read about UserIcons.
+
+The segments are activated by pressing one of the number keys from `'4'` to `'9'`.
+To end a segment press the same key again or press the '`*'`-key.
+
+If you press a different key from `'4'` to `'9'` while a segment is active,
+the current segment will be closed and a new segment opened.
+
+If the Landmarks module is [#INSTALLATION installed], and the option is
+[#Landmarks activated], a Nokia landmark is added, that marks the
+center between the start and the end of the segment, has a coverage
+radius of half the distance and intersects the end points.
+
+By default these landmarks are directional, i.e. notifications only take
+place if you're going roughly in the same direction as the landmark.
+If you want to change this, you have to save your tracks in GPX format,
+[extractmarks extract and edit] the segments and then write the landmarks
+back to the device.
+
+=== Display Modes ===
+To save battery, information display is usually only active if logging is switched on.
+
+You can switch on GPS information in idle mode by pressing the `'Select'` key (or
+`'Enter'` key, joystick button).
+
+The left and right arrow key or the `'1'` and `'3'` keys switch back and forth
+between the different modes.
+ # Overview - Log File Name and General GPS
+ # Compass and Speed
+ # Landmarks (if [#INSTALLATION installed])
+ # Satellite View
+ # Power saving mode (log file writing only)
+
+The `'2'` key switches the application in full screen mode. This especially
+useful in night mode.
+
+Night and day mode can be toggled with the `'0'` key. Night mode will
+be automatically active the the application is started after 7pm or before
+5am (should be 9am, but never mind ;-) )
+
+The `'C'` (Backspace) key also freezes the GPS display.
+
+=== Destination ===
+!PyGpsLog provides a simple way of navigating, a little bit like Nokia's
+own Navigator application.
+
+The `Destination` menu allows you to select a destination, either from your
+landmarks (if [#INSTALLATION installed]) or as decimal coordinates.
+
+Once a destination is selected it's distance and estimated arrival time is shown
+on the Overview and Compass pages. In the landmarks list it will be shown on top.
+
+On the Compass and Satellite pages there will be two dot helping you navigate.
+A *blue* marker shows the absolute heading and a *red* marker will show heading
+relative to your current heading (or view direction, when going forward).
+Here's a [Screenshots#Compass screnshot].
+
+= SETTINGS =
+== General ==
+ * *Keep Backlight On*: Keeps the devices' backlight on while logging or GPS display is active. Default: *off*.
+ * *Start automatically*: Start a new log file when the application is started. Default: *off*.
+ * *Altitude Correction*: Calibrates your altitude. Please check, when using [#Location_Requestor LocationRequestor] or [#Nokia_Positioning Nokia Positioning]. Default: *0*.
+ * *Output Directory*: Log file directory. Default *`C:\Data\GpsLog`* (or *`E:\Data\GpsLog`*, if a memory card is installed).
+ * *Log Format*: `GPX` or `OziExplorer`. Default: *GPX*.
+ * *Min. Distance to Record*: The minimum distance in meters you have to travel, before a new trackpoint is inserted. Default: *25* m.
+ * *Max. Distance per GPS interval*: Greater jumps will be regarded as incorrect data and discarded. Increase this value in an airplane. Default: *80* m.
+ * *Extended Data Format*: Logs [Screenshots#Extended_Format additional data] (like HDOP, VDOP, number of satellites and fix type in GPX format or formatted time in !OziExplorer format). Default: *on*.
+ * *Log Satellites*: Log [Screenshots#Satellite_Info detailed satellite data] (in extended GPX format only). Turn this off, if you're low on memory. Default: *on*.
+ * *Choose new Bluetooth device*: Set this to `on` to choose a new external Bluetooth device, next time you start logging. If you [#INSTALLATION signed] the application or the [#INSTALLATION LocationRequestor module] is installed, you can choose your [#OPERATION operating mode] here. Default: Depends on your [#INSTALLATION installation].
+ * *Show CPU Usage*: Show the CPU meter for this application. Only available if the [http://code.google.com/p/pygpslog/downloads/list?can=2&q=label%3ARecommended+e32jext e32jext] module is [#INSTALLATION installed]. Default: *on*.
+ * *Show Battery Meter in Fullscreen*: Default: *on*.
+ * *Reset to default settings*: Application will exit after resetting.
+
+The `'Options'` menu of the general settings page holds these commands:
+ * *Save*: Save all settings.
+ * *Merge GPX Tracks+Wpts*: Merges _all_ existing logfiles and their corresponding waypoint files into a single log file.
+
+== Landmarks ==
+The landmark settings are only available if the Landmarks module is [#INSTALLATION installed].
+
+ * *Store Waypoints as Landmarks*: Default: *on*.
+ * *Edit New Landmarks*: Let's you edit or delete landmarks after insertion. Default: *on*.
+ * *Category for Waypoints*: New [#Waypoints waypoints] will be assigned this category by default. Default: *(None)*.
+ * *Store Markers as Landmarks*: Inserts a landmark for [#Track_Segments track segment] markers. Default: *on*.
+ * *Landmark Search Radius*: Landmarks further away will not be displayed on the landmarks page. Increasing this may _significantly_ slow down the application. Default: *10* km.
+ * *Notify Near Category*: Shows a notification when you reach landmarks of a this category. Default: *(None)*.
+ * *Distance for Notification*: Show the notification when closer. Default: *25* m
+ * *Vibrate on Notification*: Only working if `miso` or `misty` modules are [#INSTALLATION installed]. Default: *on*.
+ * *Update Interval*: Refresh the landmarks page only after this interval. Default: *3* sec.
+ * *Use Small Icons*: Default: *off*.
+
+These settings are for experimental features:
+ * *Show Nokia Icons*: Shows a listbox with Nokia's own landmark icons instead of the internal ones. Default: *off*.
+
+The `'Options'` menu of the landmarks settings page holds these commands:
+ * *Save*: Save all settings.
+ * *Remove Disp. Categories*: Hides categories from the landmarks page. *Careful*: This may eat a lot of battery.
+ * *Add Display Categories*: Unless all categories are displayed, the caveat above applies!
+ * *Landmark Editor*: Invokes Nokia's Landmark application. (*Caution*: experimental feature!).
+ * *Set Icons/Categories*: This inserts the default Categories in Nokias landmarks database and sets the icons for Landmarks in these categories. *Repeat this step* if you imported landmarks from another device or PC.
+
+Since version 0.2.1, there is also the possibility to add [UserIcons user defined icon sets],
+for new landmark categories or non-english versions of S60.
+
+An audible alarm can be played on notification by copying a sound file
+named `'alarm.aac'` to your [#General configured] log directory.
+ 
+
+= TROUBLESHOOTING =
+== Known Problems ==
+ * When using an external Bluetooth GPS, logfiles are closed, if the Bluetooth connection is lost.
+ * Landmark display eats *a lot* of CPU time and battery. It's has been improved by using a cache.
+ * Landmark category filtering is still incomplete.
+ * _A lot_ of unhandled exceptions... Most of them will only be visible on program close.
+
+== FAQ ==
+ * Q: My Battery drains very rapidly!
+ * A: First, [#General switch the backlight off]. If you only want to log your GPS track, switch to [#Display_Modes Powersave mode]. Or, if you don't need track segment warnings, [#Landmarks set 'Notify near Category'] to `'(None)'`. If you absolutely want to display the landmarks page, [#Landmarks don't hide] any categories.
+ 
+ * Q: When I try to start !PyGpsLog, nothing happens.
+ * A: Try to install !PyGpsLog to the same drive as your Python installation.
+ 
+ * Q: There are no icons on the landmarks page.
+ * A: Only icons for internally known categories will be shown. To do this go to Settings->Landmarks->Options->Set Icons/Categories.
+
+= SCREENSHOTS =
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Main.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Satellite-nm.jpg
+http://pygpslog.googlecode.com/svn/trunk/doc/img/PyGpsLog-Compass-nm.jpg
+
+Some more [Screenshots here].
+
+= ACKNOWLEDGEMENTS =
+ * All authors of the [#INSTALLATION required and recommended modules]. Without them, this work would have been impossible!
+ * [http://12m3.deviantart.com/ M. Umut Pulat] for his beautiful _Tulliana 2_ icon set!
+ * [http://miloszwl.deviantart.com/ Milosz Wlazlo] for the original _Boomy_ icon set!

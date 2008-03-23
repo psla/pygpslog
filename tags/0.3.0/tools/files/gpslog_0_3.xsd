@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	xmlns:gpslog="http://pygpslog.googlecode.com"
+	targetNamespace="http://pygpslog.googlecode.com"
+	elementFormDefault="qualified">
+
+  <xsd:element name="hacc"  type="xsd:decimal"/>
+  <xsd:element name="vacc"  type="xsd:decimal"/>
+  <xsd:element name="hdg"   type="xsd:decimal"/>
+  <xsd:element name="speed" type="xsd:decimal"/>
+  <xsd:element name="mark"  type="gpslog:markType"/>
+  <xsd:element name="sat"   type="gpslog:satelliteType"/>
+
+  <xsd:complexType name="markType">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="in" type="xsd:boolean"/>
+        <xsd:attribute name="match" type="xsd:string"/>
+        <xsd:attribute name="directional" type="xsd:boolean"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  
+  <xsd:complexType name="satelliteType">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:string">
+        <xsd:attribute name="az"     type="xsd:decimal"/>
+        <xsd:attribute name="ele"    type="xsd:decimal"/>
+        <xsd:attribute name="prn"    type="xsd:int"/>
+        <xsd:attribute name="signal" type="xsd:int"/>
+        <xsd:attribute name="used"   type="xsd:boolean"/>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+  
+</xsd:schema> 
