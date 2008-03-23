@@ -9,6 +9,20 @@
 
 ~ Changed functionality
 
+== 0.3.0 - Mar. 23, 2008 (Happy Easter!) ==
+ * + Write marked waypoints to a separate GPX or !OziExplorer file.
+ * + Option to merge finished GPX tracks and waypoints.
+ * + User configurable track segment markers.
+ * + Optionally insert manually entered destinations as waypoints/landmarks.
+ * + Added simple keyboard help.
+ * + [extractmarks] can now create bi-directional landmarks.
+ * - Fixed a bug in arrival time display.
+ * - Switch off vibration while charging. May hang some devices (like the E65).
+ * - Bugfixes in internal settings.
+ * ~ Added a progress dialog to the `'Set Icons/Categories'` option.
+ * ~ Don't set landmark icons for global categories.
+ * ~ Relaxed parsing of destination coordinates.
+ 
 == 0.2.3 - Mar. 21, 2008 ==
  * + Select categories to be displayed (see [README#Landmarks settings]).
  * + Show running average speed on compass page, if a destination is selected.
