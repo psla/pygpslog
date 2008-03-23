@@ -451,13 +451,14 @@ class GpsLog(object):
       try:
         nearest = gpsloglm.NearestLm(self.gps.lat, self.gps.lon,
                                      cat=self.lmsettings.warncat,
-                                     max=2, maxdist=self.lmsettings.warnrad,
+                                     max=4, maxdist=self.lmsettings.warnrad,
                                      db=self.lmdb)
         if nearest and len(nearest) > 0 and self.gps.hdg:
           i = 0
           while i < len(nearest):
             wpt = nearest[i][0]
-            if wpt.hdg != None and abs(self.gps.hdg - wpt.hdg) > 45.0:
+            if wpt.hdg != None and\
+               abs(abs(self.gps.hdg-180.0)-abs(wpt.hdg-180.0)) >= 50.0:
               del nearest[i]
             else:
               i += 1
@@ -1203,22 +1204,25 @@ class GpsLog(object):
       raise
 
   ############################################################################
-  def markWaypoint(self):
-    gps = self.gps
+  def markWaypoint(self, wpt=None, makeTrkpt=True):
+    if wpt == None: gps = self.gps
+    else:           gps = wpt
+
     if not gps:
       return
-    if not self.gps.dataAvailable() or self.gps.position == (None,None):
+    if wpt == None and (not self.gps.dataAvailable() or self.gps.position == (None,None)):
       appuifw.note(u"No GPS data at the moment.", "error")
       return
 
     if self.log:
-      wpt = self.log.waypoint(gps)
+      wpt = self.log.waypoint(gps, trkpt=makeTrkpt)
       desc = os.path.basename(self.log.name())
     else:
-      wpt  = Waypoint(("Landmark", gps.lat,  gps.lon,  alt,  gps.time,
-                                   gps.speed,gps.hdg,  gps.fix,
-                                   gps.hdop, gps.vdop, gps.pdop,
-                                   gps.hacc, gps.vacc, attr))
+      name = (wpt != None and wpt[0]) or "Landmark"
+      wpt  = Waypoint((name, gps.lat,  gps.lon,  gps.alt,  gps.time,
+                             gps.speed,gps.hdg,  gps.fix,
+                             gps.hdop, gps.vdop, gps.pdop,
+                             gps.hacc, gps.vacc, None))
       desc = "GPS Log"
       
     if self.lmsettings.uselm and self.lmsettings.wptlm:
@@ -1238,13 +1242,18 @@ class GpsLog(object):
       rc = appuifw.multi_query(u"Latitude", u"Longitude")
       if not rc: return
       try:
-        lat, lon = float(rc[0]), float(rc[1])
-        assert ( -90.0 <= lat) and (lat <=  90.0) and\
-               (-180.0 <= lon) and (lon <= 180.0), "Invalid!"
-        wpt = Waypoint(['Destination', lat, lon])
+        lat, lon = coordFromString(rc[0]), coordFromString(rc[1],"EW",(-180.0,180.0))
+        if self.gps and self.gps.dataAvailable(): tm = self.gps.time
+        else:                                     tm = time.time()
+        wpt = Waypoint(['Destination', lat, lon, None, tm]+9*[None])
+        if self.log or (self.lmsettings.uselm and self.lmsettings.wptlm):
+          prompt = u"Create Waypoint" + \
+                   (((self.lmsettings.uselm and self.lmsettings.wptlm) and u" and Landmark?") or u"?")
+          rc = appuifw.query(prompt, "query")
+          if rc: self.markWaypoint(wpt, makeTrkpt=False)
       except:
         appuifw.note(u"Invalid Input", "error")
-        raise
+        if DEBUG: raise
         return
     else:
       screen = appuifw.app.screen
