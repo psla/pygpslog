@@ -1,0 +1,8 @@
+#summary Licenses used in pys60dict
+
+= LICENSES =
+
+This program is licensed under the GNU GPL v2 (see [COPYING]) and
+[http://www.python.org/download/releases/2.4.2/license/ Python Licenses]
+
+Copyright Thomas Johler (c) 2008
