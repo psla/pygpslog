@@ -10,7 +10,7 @@
 ~ Changed functionality
 
 == 0.3.1 - Mar. 30, 2009 ==
- * - Don't use undocumented positioning features for PyS60 versions >= 1.4.5 .
+ * - Don't use undocumented positioning features for !PyS60 versions >= 1.4.5 (fixes Issue 8).
  * ~ Add `'E:\resource`' to sys.path in case modules are installed on `'E:`'.
 
 == 0.3.0 - Mar. 23, 2008 (Happy Easter!) ==
