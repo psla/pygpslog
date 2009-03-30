@@ -1,11 +1,12 @@
 import gpslib.gpsbase
 import positioning
-import time
+import time, e32
 
 # HACK ALERT: undocumented, but otherwise bluetooth stays open!
 # we'll set it later, in open()
-try:    del positioning._positioner
-except: pass
+if e32.pys60_version < '1.4.5':
+  try:    del positioning._positioner
+  except: pass
 
 class PositioningProvider(gpslib.gpsbase.AbstractProvider):
   "S60 Positioning"
@@ -58,8 +59,10 @@ class PositioningProvider(gpslib.gpsbase.AbstractProvider):
     self.info = positioning.module_info(self.id)
     self.name = PositioningProvider.name + " using " + self.info["name"]
     # HACK ALERT: undocumented, but otherwise bluetooth stays open!
-    # positioning.select_module(self.id)
-    positioning._positioner=positioning._pos_serv.positioner(self.id)
+    if e32.pys60_version < '1.4.5':
+      positioning._positioner=positioning._pos_serv.positioner(self.id)
+    else:
+      positioning.select_module(self.id)
 
     positioning.set_requestors([{"type":"service",
                                  "format":"application",
