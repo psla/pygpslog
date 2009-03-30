@@ -1,4 +1,4 @@
-# SIS_VERSION="0.3.0"
+# SIS_VERSION="0.3.1"
 # SYMBIAN_UID=0xA0005B76
 
 import sys, os, traceback
@@ -12,6 +12,8 @@ except:envy =      None
 
 localpath = str(os.path.split(appuifw.app.full_name())[0])
 sys.path  = [localpath] + sys.path
+sys.path += [ r'e:\resource' ] # just in case
+
 
 class MyStdout(object):
   def __init__(self):
