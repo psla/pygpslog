@@ -51,7 +51,7 @@ Please see the [History] page.
 = REQUIREMENTS =
   * A device running S60 3rd edition.
   * An internal or external GPS device.
-  * Python for S60, v1.4.2 or higher
+  * Python for S60, v1.4.2 or higher. Versions 1.9.x and higher are *not* supported at this time.
   You may get it from [http://sourceforge.net/project/showfiles.php?group_id=154155 SourceForge].
   If you're new to Python on S60 it's probably better to read the
   [http://wiki.opensource.nokia.com/projects/PyS60 PyS60 Wiki] first.
